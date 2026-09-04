@@ -1,17 +1,12 @@
 import { auth } from "@/auth";
+import { calendarCacheConfigured, getCalendarCache, getCalendarTimeZone, getSelectedCalendarIds } from "@/lib/calendar-cache";
 
 export async function GET() {
-  if (!process.env.AUTH_SECRET || !process.env.AUTH_GOOGLE_ID || !process.env.AUTH_GOOGLE_SECRET) {
-    return Response.json({ configured: false, authenticated: false, events: [] });
-  }
+  const configured = Boolean(process.env.AUTH_SECRET && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && calendarCacheConfigured());
+  if (!configured) return Response.json({ configured: false, authenticated: false, cache: null, selectedIds: [] });
   const session = await auth();
-  if (!session?.user) {
-    return Response.json({ configured: true, authenticated: false, events: [] });
-  }
-  return Response.json({
-    configured: true,
-    authenticated: true,
-    events: session.calendarEvents,
-    error: session.calendarError,
-  });
+  const email = session?.user?.email;
+  if (!email) return Response.json({ configured: true, authenticated: false, cache: null, selectedIds: [] });
+  const [cache, timeZone, selectedIds] = await Promise.all([getCalendarCache(email), getCalendarTimeZone(email), getSelectedCalendarIds(email)]);
+  return Response.json({ configured: true, authenticated: true, cache, timeZone, selectedIds });
 }

@@ -2,15 +2,16 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import type { CalendarEvent } from "@/auth";
+import type { CalendarCache, CalendarChoice, CalendarEvent } from "@/lib/calendar-types";
 
 type Task = { id: number; label: string; done: boolean };
 type CalendarState = {
   loading: boolean;
   configured: boolean;
   authenticated: boolean;
-  events: CalendarEvent[];
-  error?: "RefreshTokenError" | "CalendarFetchError";
+  cache: CalendarCache | null;
+  selectedIds: string[];
+  timeZone?: string;
 };
 
 const quickLinks = [
@@ -32,11 +33,29 @@ function formatTime(seconds: number) {
   return `${minutes}:${remainder}`;
 }
 
-function eventTime(event: CalendarEvent) {
+function localDateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function moveDate(dateKey: string, days: number) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return localDateKey(new Date(year, month - 1, day + days, 12));
+}
+
+function displayDate(dateKey: string) {
+  if (!dateKey) return "Today";
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day, 12).toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric",
+  });
+}
+
+function eventTime(event: CalendarEvent, timeZone: string) {
   if (event.allDay) return "All day";
   const format = (value: string) => new Date(value).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    timeZone,
   });
   return `${format(event.start)} – ${format(event.end)}`;
 }
@@ -51,13 +70,23 @@ export default function Home() {
     loading: true,
     configured: false,
     authenticated: false,
-    events: [],
+    cache: null,
+    selectedIds: [],
   });
+  const [selectedDate, setSelectedDate] = useState("");
+  const [refreshingCalendar, setRefreshingCalendar] = useState(false);
+  const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [showCalendarSettings, setShowCalendarSettings] = useState(false);
+  const [calendarChoices, setCalendarChoices] = useState<CalendarChoice[] | null>(null);
+  const [loadingCalendars, setLoadingCalendars] = useState(false);
+  const [savingCalendars, setSavingCalendars] = useState(false);
   const tasksLoaded = useRef(false);
 
   useEffect(() => {
     const initialize = window.setTimeout(() => {
       setNow(new Date());
+      setSelectedDate(localDateKey(new Date()));
       const saved = window.localStorage.getItem("home-dashboard-tasks");
       if (saved) {
         try { setTasks(JSON.parse(saved) as Task[]); }
@@ -83,7 +112,7 @@ export default function Home() {
       .then((data) => setCalendar({ ...data, loading: false }))
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setCalendar({ loading: false, configured: false, authenticated: false, events: [], error: "CalendarFetchError" });
+        setCalendar({ loading: false, configured: false, authenticated: false, cache: null, selectedIds: [] });
       });
     return () => controller.abort();
   }, []);
@@ -113,6 +142,98 @@ export default function Home() {
     if (!label) return;
     setTasks((current) => [...current, { id: Date.now(), label, done: false }]);
     setTaskLabel("");
+  }
+
+  const calendarTimeZone = calendar.cache?.timeZone || calendar.timeZone || "America/Denver";
+  const selectedCalendarSet = new Set(calendarChoices
+    ? calendarChoices.filter((choice) => choice.selected).map((choice) => choice.id)
+    : calendar.selectedIds);
+  const dayEvents = (calendar.cache?.events ?? [])
+    .filter((event) => event.days.includes(selectedDate) && selectedCalendarSet.has(event.calendarId))
+    .sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.start.localeCompare(b.start));
+  const allDayEvents = dayEvents.filter((event) => event.allDay);
+  const timedEvents = dayEvents.filter((event) => !event.allDay);
+  const todayKey = now ? localDateKey(now) : "";
+  const dateIsCached = Boolean(
+    calendar.cache && selectedDate >= calendar.cache.rangeStart && selectedDate < calendar.cache.rangeEnd,
+  );
+
+  async function refreshCalendar() {
+    const nowMs = Date.now();
+    if (cooldownUntil > nowMs) {
+      const minutes = Math.max(1, Math.ceil((cooldownUntil - nowMs) / 60_000));
+      setCalendarNotice(`Calendar was refreshed recently. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
+      return;
+    }
+    setRefreshingCalendar(true);
+    setCalendarNotice(null);
+    try {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Denver";
+      const response = await fetch("/api/calendar/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timeZone }),
+      });
+      const data = await response.json() as { cache?: CalendarCache | null; error?: string; retryAfter?: number };
+      if (data.cache) setCalendar((current) => ({ ...current, cache: data.cache ?? null }));
+      if (response.status === 429) {
+        const secondsLeft = data.retryAfter ?? 300;
+        setCooldownUntil(Date.now() + secondsLeft * 1000);
+        const minutes = Math.max(1, Math.ceil(secondsLeft / 60));
+        setCalendarNotice(`Calendar was refreshed recently. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
+      } else if (!response.ok) {
+        setCalendarNotice(data.error || "Calendar couldn't be refreshed. Showing previously saved events.");
+      } else {
+        setCooldownUntil(Date.now() + 5 * 60_000);
+      }
+    } catch {
+      setCalendarNotice("Calendar couldn't be refreshed. Showing previously saved events.");
+    } finally {
+      setRefreshingCalendar(false);
+    }
+  }
+
+  async function openCalendarSettings() {
+    setShowCalendarSettings(true);
+    if (calendarChoices) return;
+    setLoadingCalendars(true);
+    setCalendarNotice(null);
+    try {
+      const response = await fetch("/api/calendar/calendars");
+      const data = await response.json() as { calendars?: CalendarChoice[]; error?: string };
+      if (!response.ok || !data.calendars) throw new Error(data.error || "Unable to load calendars");
+      setCalendarChoices(data.calendars);
+    } catch (error) {
+      setCalendarNotice(error instanceof Error ? error.message : "Unable to load calendars.");
+    } finally {
+      setLoadingCalendars(false);
+    }
+  }
+
+  async function saveCalendarSelection() {
+    if (!calendarChoices) return;
+    setSavingCalendars(true);
+    setCalendarNotice(null);
+    try {
+      const response = await fetch("/api/calendar/calendars", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selectedIds: calendarChoices.filter((calendar) => calendar.selected).map((calendar) => calendar.id),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Denver",
+        }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error || "Unable to save calendars");
+      const selectedIds = calendarChoices.filter((choice) => choice.selected).map((choice) => choice.id);
+      setCalendar((current) => ({ ...current, selectedIds }));
+      setShowCalendarSettings(false);
+      setCalendarNotice("Calendar selection saved. Refresh Calendar to update saved events.");
+    } catch (error) {
+      setCalendarNotice(error instanceof Error ? error.message : "Unable to save calendars.");
+    } finally {
+      setSavingCalendars(false);
+    }
   }
 
   return (
@@ -151,9 +272,28 @@ export default function Home() {
 
         <section className="calendar-panel" aria-labelledby="calendar-heading">
           <div className="section-heading calendar-heading">
-            <div><p className="eyebrow light">Google Calendar</p><h2 id="calendar-heading">Today’s schedule</h2></div>
-            {calendar.authenticated && <Link className="calendar-refresh" href="/">Refresh</Link>}
+            <div>
+              <p className="eyebrow light">Calendar</p>
+              <h2 id="calendar-heading">{selectedDate === todayKey ? "Today" : displayDate(selectedDate)}</h2>
+            </div>
+            {calendar.authenticated && (
+              <div className="calendar-actions">
+                <button onClick={openCalendarSettings}>Calendars</button>
+                <button className="refresh-button" onClick={refreshCalendar} disabled={refreshingCalendar}>
+                  {refreshingCalendar ? "Refreshing…" : "Refresh Calendar"}
+                </button>
+              </div>
+            )}
           </div>
+          <div className="date-navigation">
+            <button onClick={() => setSelectedDate((date) => moveDate(date, -1))} aria-label="Previous day">←</button>
+            <button onClick={() => setSelectedDate(localDateKey(new Date()))}>Today</button>
+            <button onClick={() => setSelectedDate((date) => moveDate(date, 1))} aria-label="Next day">→</button>
+          </div>
+          {calendar.cache && (
+            <p className="last-refreshed">Last refreshed: {new Date(calendar.cache.refreshedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: calendarTimeZone })} at {new Date(calendar.cache.refreshedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: calendarTimeZone })}</p>
+          )}
+          {calendarNotice && <p className="calendar-warning" role="status">{calendarNotice}</p>}
           {calendar.loading ? (
             <p className="calendar-message">Loading your calendar…</p>
           ) : !calendar.configured ? (
@@ -168,22 +308,38 @@ export default function Home() {
               </div>
               <Link href="/api/auth/signin/google?callbackUrl=/" prefetch={false}>Connect Google Calendar</Link>
             </div>
-          ) : calendar.error ? (
-            <div className="calendar-connect">
-              <div><strong>Calendar needs to reconnect.</strong><p>Your authorization expired or Google Calendar could not be reached.</p></div>
-              <Link href="/api/auth/signin/google?callbackUrl=/" prefetch={false}>Reconnect</Link>
+          ) : showCalendarSettings ? (
+            <div className="calendar-settings">
+              <div className="settings-title"><strong>Choose calendars</strong><button onClick={() => setShowCalendarSettings(false)} aria-label="Close calendar settings">×</button></div>
+              {loadingCalendars ? <p>Loading your Google calendars…</p> : calendarChoices ? (
+                <>
+                  <div className="calendar-options">
+                    {calendarChoices.map((choice) => (
+                      <label key={choice.id}>
+                        <input type="checkbox" checked={choice.selected} onChange={() => setCalendarChoices((current) => current?.map((item) => item.id === choice.id ? { ...item, selected: !item.selected } : item) ?? null)} />
+                        <span className="calendar-dot" style={{ backgroundColor: choice.color || "#d7b979" }} />
+                        <span>{choice.name}{choice.primary ? " (Primary)" : ""}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <button className="save-calendars" onClick={saveCalendarSelection} disabled={savingCalendars}>{savingCalendars ? "Saving…" : "Save calendars"}</button>
+                </>
+              ) : <p>Calendar choices could not be loaded.</p>}
             </div>
-          ) : calendar.events.length === 0 ? (
-            <p className="calendar-message">Nothing scheduled today. The day is yours.</p>
+          ) : !calendar.cache ? (
+            <div className="calendar-connect">
+              <div><strong>No saved calendar data yet.</strong><p>Choose the calendars you want, then click Refresh Calendar to retrieve the 30-day past and 90-day future range.</p></div>
+              <button onClick={openCalendarSettings}>Choose calendars</button>
+            </div>
+          ) : !dateIsCached ? (
+            <p className="calendar-message">This date is outside the saved calendar range.</p>
+          ) : dayEvents.length === 0 ? (
+            <p className="calendar-message">No events scheduled for today.</p>
           ) : (
-            <ol className="event-list">
-              {calendar.events.map((event) => (
-                <li key={event.id}>
-                  <time>{eventTime(event)}</time>
-                  <div><strong>{event.title}</strong>{event.location && <span>{event.location}</span>}</div>
-                </li>
-              ))}
-            </ol>
+            <div className="event-groups">
+              {allDayEvents.length > 0 && <div><p className="event-group-label">All day</p><ol className="event-list all-day-list">{allDayEvents.map((event) => <li key={event.id}><time>All day</time><div><strong>{event.title}</strong><span>{event.calendarName}{event.location ? ` · ${event.location}` : ""}</span></div></li>)}</ol></div>}
+              {timedEvents.length > 0 && <div><p className="event-group-label">Schedule</p><ol className="event-list">{timedEvents.map((event) => <li key={event.id}><time>{eventTime(event, calendarTimeZone)}</time><div><strong>{event.title}</strong><span>{event.calendarName}{event.location ? ` · ${event.location}` : ""}</span></div></li>)}</ol></div>}
+            </div>
           )}
         </section>
 

@@ -37,16 +37,36 @@ h2 { color:var(--navy); font-size:35px; letter-spacing:-.025em; }
 .quick-card div span { font-size:12px; opacity:.65; }
 .arrow { position:absolute; top:20px; right:22px; font-size:19px; opacity:.8; }
 .calendar-panel { margin-bottom:14px; padding:clamp(28px,4vw,44px); color:var(--paper); background:var(--green); border-radius:4px; }
-.calendar-heading { align-items:center; margin-bottom:22px; }
+.calendar-heading { align-items:center; margin-bottom:12px; }
 .calendar-heading h2 { color:var(--paper); }
-.calendar-refresh { color:rgba(251,247,239,.72); font-size:12px; text-decoration:none; }
-.calendar-refresh:hover { color:white; }
+.calendar-actions { display:flex; align-items:center; gap:9px; }
+.calendar-actions button,.calendar-connect button { padding:11px 14px; border:1px solid rgba(255,255,255,.3); border-radius:3px; color:var(--paper); background:transparent; cursor:pointer; font-size:12px; font-weight:700; }
+.calendar-actions .refresh-button,.calendar-connect button { border-color:var(--paper); color:var(--green); background:var(--paper); }
+.calendar-actions button:hover,.calendar-connect button:hover { border-color:white; }
+.calendar-actions .refresh-button:hover,.calendar-connect button:hover { background:white; }
+.calendar-actions button:disabled,.save-calendars:disabled { opacity:.55; cursor:not-allowed; }
+.date-navigation { display:flex; gap:6px; margin-bottom:8px; }
+.date-navigation button { min-width:34px; height:29px; padding:0 9px; border:1px solid rgba(255,255,255,.2); border-radius:3px; color:rgba(251,247,239,.82); background:transparent; cursor:pointer; font-size:11px; }
+.date-navigation button:hover { border-color:rgba(255,255,255,.55); color:white; }
+.last-refreshed { margin:0 0 14px; color:rgba(251,247,239,.58); font-size:11px; }
+.calendar-warning { margin:10px 0; padding:10px 12px; border-left:2px solid #d7b979; color:#f5dfaf; background:rgba(0,0,0,.12); font-size:12px; }
 .calendar-message { margin:0; padding:28px 0 8px; color:rgba(251,247,239,.72); font-family:Georgia,serif; font-size:18px; }
 .calendar-connect { display:flex; align-items:center; justify-content:space-between; gap:30px; padding-top:20px; border-top:1px solid rgba(255,255,255,.16); }
 .calendar-connect strong { display:block; margin-bottom:6px; font-family:Georgia,serif; font-size:22px; font-weight:400; }
 .calendar-connect p { max-width:560px; margin:0; color:rgba(251,247,239,.66); font-size:13px; line-height:1.6; }
 .calendar-connect a { flex-shrink:0; padding:13px 18px; border-radius:3px; color:var(--green); background:var(--paper); text-decoration:none; font-size:13px; font-weight:800; }
 .calendar-connect a:hover { background:white; }
+.calendar-settings { padding-top:20px; border-top:1px solid rgba(255,255,255,.16); }
+.settings-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:15px; }
+.settings-title strong { font-family:Georgia,serif; font-size:21px; font-weight:400; }
+.settings-title button { border:0; color:rgba(251,247,239,.7); background:transparent; cursor:pointer; font-size:24px; }
+.calendar-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 20px; margin-bottom:18px; }
+.calendar-options label { display:flex; align-items:center; gap:9px; min-height:35px; cursor:pointer; font-size:13px; }
+.calendar-options input { accent-color:var(--gold); }
+.calendar-dot { width:9px; height:9px; flex-shrink:0; border-radius:50%; }
+.save-calendars { padding:11px 15px; border:0; border-radius:3px; color:var(--green); background:var(--paper); cursor:pointer; font-size:12px; font-weight:800; }
+.event-groups { display:grid; gap:22px; }
+.event-group-label { margin:0 0 8px; color:#d7b979; font-size:10px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
 .event-list { list-style:none; margin:0; padding:0; border-top:1px solid rgba(255,255,255,.16); }
 .event-list li { display:grid; grid-template-columns:minmax(150px,.38fr) 1fr; gap:24px; padding:18px 0; border-bottom:1px solid rgba(255,255,255,.16); }
 .event-list time { color:#d7b979; font-size:12px; font-weight:800; letter-spacing:.04em; }
@@ -79,5 +99,5 @@ h2 { color:var(--navy); font-size:35px; letter-spacing:-.025em; }
 .primary-button:hover { background:white; } .text-button:hover { color:white; }
 footer { display:flex; justify-content:space-between; padding:20px 0 36px; border-top:1px solid var(--line); color:var(--muted); font-family:Georgia,serif; font-size:13px; font-style:italic; }
 @media (max-width:800px) { .topbar{grid-template-columns:1fr 1fr}.date-label{display:none}.quick-grid{grid-template-columns:repeat(2,1fr)}.content-grid{grid-template-columns:1fr}.hero{min-height:290px}.clock{align-self:flex-start} }
-@media (max-width:540px) { .dashboard{width:min(100% - 30px,1180px)}.topbar{height:66px;padding:0 15px}.github-link{font-size:12px}.hero{min-height:0;display:block;padding:60px 0 42px}h1{font-size:52px}.hero-copy{margin-top:20px;font-size:16px}.clock{margin-top:35px;font-size:30px}.quick-section{padding:32px 0 45px}.quick-grid{grid-template-columns:1fr}.quick-card{min-height:142px}.hint{display:none}.calendar-connect{align-items:flex-start;flex-direction:column}.event-list li{grid-template-columns:1fr;gap:7px}.panel{min-height:390px}footer{flex-direction:column;gap:7px} }
+@media (max-width:540px) { .dashboard{width:min(100% - 30px,1180px)}.topbar{height:66px;padding:0 15px}.github-link{font-size:12px}.hero{min-height:0;display:block;padding:60px 0 42px}h1{font-size:52px}.hero-copy{margin-top:20px;font-size:16px}.clock{margin-top:35px;font-size:30px}.quick-section{padding:32px 0 45px}.quick-grid{grid-template-columns:1fr}.quick-card{min-height:142px}.hint{display:none}.calendar-heading{align-items:flex-start;flex-direction:column}.calendar-actions{width:100%}.calendar-actions button{flex:1}.calendar-connect{align-items:flex-start;flex-direction:column}.calendar-options{grid-template-columns:1fr}.event-list li{grid-template-columns:1fr;gap:7px}.panel{min-height:390px}footer{flex-direction:column;gap:7px} }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
