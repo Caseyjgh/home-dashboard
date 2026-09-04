@@ -91,8 +91,8 @@ export async function usableAccessToken(token: JWT) {
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      client_id: process.env.CLIENT_ID!,
+      client_secret: process.env.SECRET!,
       grant_type: "refresh_token",
       refresh_token: token.refreshToken,
     }),

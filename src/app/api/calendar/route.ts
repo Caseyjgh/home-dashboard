@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { calendarCacheConfigured, getCalendarCache, getCalendarTimeZone, getSelectedCalendarIds } from "@/lib/calendar-cache";
 
 export async function GET() {
-  const configured = Boolean(process.env.AUTH_SECRET && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && calendarCacheConfigured());
+  const configured = Boolean(process.env.AUTH_SECRET && process.env.CLIENT_ID && process.env.SECRET && calendarCacheConfigured());
   if (!configured) return Response.json({ configured: false, authenticated: false, cache: null, selectedIds: [] });
   const session = await auth();
   const email = session?.user?.email;
