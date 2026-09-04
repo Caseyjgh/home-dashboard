@@ -11,6 +11,7 @@ type CalendarState = {
   authenticated: boolean;
   cache: CalendarCache | null;
   selectedIds: string[];
+  missingVariables: string[];
   timeZone?: string;
 };
 
@@ -72,6 +73,7 @@ export default function Home() {
     authenticated: false,
     cache: null,
     selectedIds: [],
+    missingVariables: [],
   });
   const [selectedDate, setSelectedDate] = useState("");
   const [refreshingCalendar, setRefreshingCalendar] = useState(false);
@@ -112,7 +114,7 @@ export default function Home() {
       .then((data) => setCalendar({ ...data, loading: false }))
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setCalendar({ loading: false, configured: false, authenticated: false, cache: null, selectedIds: [] });
+        setCalendar({ loading: false, configured: false, authenticated: false, cache: null, selectedIds: [], missingVariables: [] });
       });
     return () => controller.abort();
   }, []);
@@ -298,7 +300,10 @@ export default function Home() {
             <p className="calendar-message">Loading your calendar…</p>
           ) : !calendar.configured ? (
             <div className="calendar-connect">
-              <div><strong>Calendar setup is almost ready.</strong><p>Add the documented Google OAuth environment variables to connect your calendar.</p></div>
+              <div>
+                <strong>Calendar setup is almost ready.</strong>
+                <p>Missing environment {calendar.missingVariables.length === 1 ? "variable" : "variables"}: {calendar.missingVariables.join(", ") || "configuration could not be loaded"}.</p>
+              </div>
             </div>
           ) : !calendar.authenticated ? (
             <div className="calendar-connect">
