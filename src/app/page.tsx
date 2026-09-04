@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { signIn } from "next-auth/react";
 import type { CalendarCache, CalendarChoice, CalendarEvent } from "@/lib/calendar-types";
 
 type Task = { id: number; label: string; done: boolean };
@@ -311,7 +311,9 @@ export default function Home() {
                 <strong>Bring today into view.</strong>
                 <p>Connect Google Calendar with read-only access to see events and times here.</p>
               </div>
-              <Link href="/api/auth/signin/google?callbackUrl=/" prefetch={false}>Connect Google Calendar</Link>
+              <button type="button" onClick={() => signIn("google", { redirectTo: "/" })}>
+                Connect Google Calendar
+              </button>
             </div>
           ) : showCalendarSettings ? (
             <div className="calendar-settings">
