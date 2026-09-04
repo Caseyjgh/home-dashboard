@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { getCalendarCache, getCalendarTimeZone, getSelectedCalendarIds } from "@/lib/calendar-cache";
 
 export async function GET() {
-  const requiredVariables = ["AUTH_SECRET", "CLIENT_ID", "SECRET", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"] as const;
+  const requiredVariables = ["AUTH_SECRET", "CLIENT_ID", "SECRET", "KV_REST_API_URL", "KV_REST_API_TOKEN"] as const;
   const missingVariables = requiredVariables.filter((name) => !process.env[name]);
   if (missingVariables.length > 0) {
     return Response.json({ configured: false, authenticated: false, cache: null, selectedIds: [], missingVariables });

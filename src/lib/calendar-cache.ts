@@ -1,3 +1,4 @@
+import "server-only";
 import { createHash } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import type { CalendarCache, CalendarChoice } from "./calendar-types";
@@ -6,12 +7,15 @@ const PREFIX = "home-dashboard:calendar";
 const COOLDOWN_SECONDS = 5 * 60;
 
 export function calendarCacheConfigured() {
-  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+  return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 }
 
 function redis() {
   if (!calendarCacheConfigured()) throw new Error("Calendar cache is not configured");
-  return Redis.fromEnv();
+  return new Redis({
+    url: process.env.KV_REST_API_URL!,
+    token: process.env.KV_REST_API_TOKEN!,
+  });
 }
 
 function userKey(email: string) {

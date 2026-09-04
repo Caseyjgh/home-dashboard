@@ -41,9 +41,9 @@ For local sign-in, also add:
 http://localhost:3000/api/auth/callback/google
 ```
 
-Copy `.env.example` to `.env.local` and provide `AUTH_SECRET`, `CLIENT_ID`, `SECRET`, `UPSTASH_REDIS_REST_URL`, and `UPSTASH_REDIS_REST_TOKEN`. `CLIENT_ID` and `SECRET` are the Google OAuth web-application credentials. The optional `GOOGLE_CALENDAR_TIME_ZONE` defaults to America/Denver until the signed-in browser stores its explicit IANA timezone.
+Copy `.env.example` to `.env.local` and provide `AUTH_SECRET`, `CLIENT_ID`, `SECRET`, `KV_REST_API_URL`, and `KV_REST_API_TOKEN`. `CLIENT_ID` and `SECRET` are the Google OAuth web-application credentials. `KV_REST_API_URL` and `KV_REST_API_TOKEN` come from the Vercel-provisioned KV store and are used only by server-side code. The optional `GOOGLE_CALENDAR_TIME_ZONE` defaults to America/Denver until the signed-in browser stores its explicit IANA timezone.
 
-Calendar events, selected-calendar preferences, and cooldown timestamps are stored in Upstash Redis. Normal page loads and date navigation read only this cache. Google Calendar is contacted only when the user explicitly refreshes, or when the user opens calendar selection and no cached calendar list exists.
+Calendar events, selected-calendar preferences, user timezone, last successful refresh time, and cooldown timestamps are stored in Vercel KV. Normal page loads and date navigation read only this cache. Google Calendar is contacted only when the user explicitly refreshes, or when the user opens calendar selection and no cached calendar list exists.
 
 ## Deployment
 
