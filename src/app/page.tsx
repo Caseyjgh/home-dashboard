@@ -1,8 +1,17 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import type { CalendarEvent } from "@/auth";
 
 type Task = { id: number; label: string; done: boolean };
+type CalendarState = {
+  loading: boolean;
+  configured: boolean;
+  authenticated: boolean;
+  events: CalendarEvent[];
+  error?: "RefreshTokenError" | "CalendarFetchError";
+};
 
 const quickLinks = [
   { label: "Gmail", detail: "Inbox", href: "https://mail.google.com", tone: "brick" },
@@ -23,12 +32,27 @@ function formatTime(seconds: number) {
   return `${minutes}:${remainder}`;
 }
 
+function eventTime(event: CalendarEvent) {
+  if (event.allDay) return "All day";
+  const format = (value: string) => new Date(value).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${format(event.start)} – ${format(event.end)}`;
+}
+
 export default function Home() {
   const [now, setNow] = useState<Date | null>(null);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [taskLabel, setTaskLabel] = useState("");
   const [seconds, setSeconds] = useState(25 * 60);
   const [running, setRunning] = useState(false);
+  const [calendar, setCalendar] = useState<CalendarState>({
+    loading: true,
+    configured: false,
+    authenticated: false,
+    events: [],
+  });
   const tasksLoaded = useRef(false);
 
   useEffect(() => {
@@ -48,6 +72,21 @@ export default function Home() {
   useEffect(() => {
     if (tasksLoaded.current) window.localStorage.setItem("home-dashboard-tasks", JSON.stringify(tasks));
   }, [tasks]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/calendar", { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Calendar request failed");
+        return response.json() as Promise<Omit<CalendarState, "loading">>;
+      })
+      .then((data) => setCalendar({ ...data, loading: false }))
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setCalendar({ loading: false, configured: false, authenticated: false, events: [], error: "CalendarFetchError" });
+      });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (!running) return;
@@ -108,6 +147,44 @@ export default function Home() {
               </a>
             ))}
           </div>
+        </section>
+
+        <section className="calendar-panel" aria-labelledby="calendar-heading">
+          <div className="section-heading calendar-heading">
+            <div><p className="eyebrow light">Google Calendar</p><h2 id="calendar-heading">Today’s schedule</h2></div>
+            {calendar.authenticated && <Link className="calendar-refresh" href="/">Refresh</Link>}
+          </div>
+          {calendar.loading ? (
+            <p className="calendar-message">Loading your calendar…</p>
+          ) : !calendar.configured ? (
+            <div className="calendar-connect">
+              <div><strong>Calendar setup is almost ready.</strong><p>Add the documented Google OAuth environment variables to connect your calendar.</p></div>
+            </div>
+          ) : !calendar.authenticated ? (
+            <div className="calendar-connect">
+              <div>
+                <strong>Bring today into view.</strong>
+                <p>Connect Google Calendar with read-only access to see events and times here.</p>
+              </div>
+              <Link href="/api/auth/signin/google?callbackUrl=/" prefetch={false}>Connect Google Calendar</Link>
+            </div>
+          ) : calendar.error ? (
+            <div className="calendar-connect">
+              <div><strong>Calendar needs to reconnect.</strong><p>Your authorization expired or Google Calendar could not be reached.</p></div>
+              <Link href="/api/auth/signin/google?callbackUrl=/" prefetch={false}>Reconnect</Link>
+            </div>
+          ) : calendar.events.length === 0 ? (
+            <p className="calendar-message">Nothing scheduled today. The day is yours.</p>
+          ) : (
+            <ol className="event-list">
+              {calendar.events.map((event) => (
+                <li key={event.id}>
+                  <time>{eventTime(event)}</time>
+                  <div><strong>{event.title}</strong>{event.location && <span>{event.location}</span>}</div>
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
 
         <div className="content-grid">
