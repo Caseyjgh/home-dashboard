@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import type { CalendarCache, CalendarChoice, CalendarEvent } from "@/lib/calendar-types";
 
 type Task = { id: number; label: string; done: boolean };
@@ -13,7 +13,11 @@ type CalendarState = {
   selectedIds: string[];
   missingVariables: string[];
   timeZone?: string;
+  account?: { name: string | null; email: string } | null;
+  calendarAccess?: boolean | null;
 };
+
+const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 
 const quickLinks = [
   { label: "Gmail", detail: "Inbox", href: "https://mail.google.com", tone: "brick" },
@@ -61,12 +65,15 @@ function eventTime(event: CalendarEvent, timeZone: string) {
   return `${format(event.start)} – ${format(event.end)}`;
 }
 
-async function apiErrorMessage(response: Response, fallback: string) {
+async function apiError(response: Response, fallback: string) {
   try {
-    const data = await response.json() as { error?: unknown };
-    return typeof data.error === "string" && data.error ? data.error : `${fallback} (${response.status})`;
+    const data = await response.json() as { error?: unknown; reconnect?: unknown };
+    return {
+      message: typeof data.error === "string" && data.error ? data.error : `${fallback} (${response.status})`,
+      reconnect: data.reconnect === true,
+    };
   } catch {
-    return `${fallback} (${response.status})`;
+    return { message: `${fallback} (${response.status})`, reconnect: false };
   }
 }
 
@@ -95,6 +102,7 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState("");
   const [refreshingCalendar, setRefreshingCalendar] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
+  const [calendarReconnectRequired, setCalendarReconnectRequired] = useState(false);
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [showCalendarSettings, setShowCalendarSettings] = useState(false);
   const [calendarChoices, setCalendarChoices] = useState<CalendarChoice[] | null>(null);
@@ -193,8 +201,9 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ timeZone }),
       });
-      const data = await response.json() as { cache?: CalendarCache | null; error?: string; retryAfter?: number };
+      const data = await response.json() as { cache?: CalendarCache | null; error?: string; retryAfter?: number; reconnect?: boolean };
       if (data.cache) setCalendar((current) => ({ ...current, cache: data.cache ?? null }));
+      setCalendarReconnectRequired(data.reconnect === true);
       if (response.status === 429) {
         const secondsLeft = data.retryAfter ?? 300;
         setCooldownUntil(Date.now() + secondsLeft * 1000);
@@ -219,9 +228,14 @@ export default function Home() {
     setCalendarNotice(null);
     try {
       const response = await fetch("/api/calendar/calendars");
-      if (!response.ok) throw new Error(await apiErrorMessage(response, "Unable to load calendars"));
+      if (!response.ok) {
+        const failure = await apiError(response, "Unable to load calendars");
+        setCalendarReconnectRequired(failure.reconnect);
+        throw new Error(failure.message);
+      }
       const data = await apiJson<{ calendars?: CalendarChoice[] }>(response, "Unable to load calendars");
       if (!data.calendars) throw new Error("The calendar service returned an invalid response.");
+      setCalendarReconnectRequired(false);
       setCalendarChoices(data.calendars);
     } catch (error) {
       setCalendarNotice(error instanceof Error ? error.message : "Unable to load calendars.");
@@ -243,7 +257,7 @@ export default function Home() {
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Denver",
         }),
       });
-      if (!response.ok) throw new Error(await apiErrorMessage(response, "Unable to save calendars"));
+      if (!response.ok) throw new Error((await apiError(response, "Unable to save calendars")).message);
       await apiJson(response, "Unable to save calendars");
       const selectedIds = calendarChoices.filter((choice) => choice.selected).map((choice) => choice.id);
       setCalendar((current) => ({ ...current, selectedIds }));
@@ -256,12 +270,37 @@ export default function Home() {
     }
   }
 
+  function reconnectGoogleCalendar() {
+    void signIn("google", { redirectTo: "/" }, {
+      scope: `openid email profile ${CALENDAR_SCOPE}`,
+      access_type: "offline",
+      prompt: "consent",
+      include_granted_scopes: "true",
+    });
+  }
+
   return (
     <main>
       <header className="topbar">
         <a className="brand" href="#top" aria-label="Home dashboard"><span className="brand-mark">H</span><span>Home</span></a>
         <p className="date-label">{now?.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) ?? "Loading today…"}</p>
-        <a className="github-link" href="https://github.com/caseyjgh/home-dashboard" target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></a>
+        <div className="topbar-actions">
+          <a className="github-link" href="https://github.com/caseyjgh/home-dashboard" target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></a>
+          {calendar.authenticated && calendar.account && (
+            <details className="account-menu">
+              <summary aria-label="Google account menu">
+                <span className="account-avatar" aria-hidden="true">{(calendar.account.name || calendar.account.email).charAt(0).toUpperCase()}</span>
+                <span className="account-summary">{calendar.account.name || calendar.account.email}</span>
+              </summary>
+              <div className="account-popover">
+                <strong>{calendar.account.name || "Google account"}</strong>
+                <span>{calendar.account.email}</span>
+                <button type="button" onClick={reconnectGoogleCalendar}>Reconnect Google Calendar</button>
+                <button type="button" onClick={() => void signOut({ redirectTo: "/" })}>Sign out</button>
+              </div>
+            </details>
+          )}
+        </div>
       </header>
 
       <div className="dashboard" id="top">
@@ -313,7 +352,20 @@ export default function Home() {
           {calendar.cache && (
             <p className="last-refreshed">Last refreshed: {new Date(calendar.cache.refreshedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: calendarTimeZone })} at {new Date(calendar.cache.refreshedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: calendarTimeZone })}</p>
           )}
-          {calendarNotice && <p className="calendar-warning" role="status">{calendarNotice}</p>}
+          {calendarNotice && (
+            <div className="calendar-warning" role="status">
+              <span>{calendarNotice}</span>
+              {(calendarReconnectRequired || calendar.calendarAccess === false) && (
+                <button type="button" onClick={reconnectGoogleCalendar}>Reconnect Google Calendar</button>
+              )}
+            </div>
+          )}
+          {!calendarNotice && calendar.calendarAccess === false && (
+            <div className="calendar-warning" role="status">
+              <span>Google Calendar read access was not granted.</span>
+              <button type="button" onClick={reconnectGoogleCalendar}>Reconnect Google Calendar</button>
+            </div>
+          )}
           {calendar.loading ? (
             <p className="calendar-message">Loading your calendar…</p>
           ) : !calendar.configured ? (

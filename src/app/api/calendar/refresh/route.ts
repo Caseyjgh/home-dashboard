@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { beginRefresh, getCalendarCache, getCalendarChoices, getSelectedCalendarIds, saveCalendarCache, saveCalendarTimeZone } from "@/lib/calendar-cache";
 import { fetchEventsForCalendars, GoogleCalendarError, usableAccessToken } from "@/lib/google-calendar";
 
+const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+
 export async function POST(request: NextRequest) {
   const session = await auth();
   const email = session?.user?.email;
@@ -31,7 +33,12 @@ export async function POST(request: NextRequest) {
   const startedAt = new Date().toISOString();
   try {
     const token = await getToken({ req: request, secret: process.env.AUTH_SECRET, secureCookie: process.env.NODE_ENV === "production" });
-    if (!token) return Response.json({ error: "Google Calendar must be reconnected." }, { status: 401 });
+    if (!token || (!token.accessToken && !token.refreshToken)) {
+      return Response.json({ error: "Google Calendar must be reconnected.", reconnect: true }, { status: 401 });
+    }
+    if (token.oauthScope && !token.oauthScope.split(" ").includes(CALENDAR_SCOPE)) {
+      return Response.json({ error: "Google Calendar read access was not granted.", reconnect: true }, { status: 403 });
+    }
     const accessToken = await usableAccessToken(token);
     const result = await fetchEventsForCalendars(accessToken, selected, timeZone);
     const cache = { events: result.events, rangeStart: result.rangeStart, rangeEnd: result.rangeEnd, timeZone, refreshedAt: new Date().toISOString() };
@@ -41,6 +48,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const status = error instanceof GoogleCalendarError ? error.status : 500;
     console.error("calendar_sync", { timestamp: startedAt, calendarsQueried: selected.length, eventsReturned: 0, success: false, googleStatus: status });
-    return Response.json({ error: "Calendar couldn't be refreshed. Showing previously saved events.", cache: await getCalendarCache(email) }, { status: status === 401 ? 401 : 502 });
+    const reconnect = status === 401 || (error instanceof GoogleCalendarError && ["insufficientPermissions", "insufficient_scope", "ACCESS_TOKEN_SCOPE_INSUFFICIENT"].includes(error.reason ?? ""));
+    return Response.json({
+      error: reconnect ? "Google Calendar read access is unavailable. Please reconnect Google Calendar." : "Calendar couldn't be refreshed. Showing previously saved events.",
+      reconnect,
+      cache: await getCalendarCache(email),
+    }, { status: status === 401 ? 401 : 502 });
   }
 }

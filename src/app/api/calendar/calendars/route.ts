@@ -8,9 +8,9 @@ const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 
 function calendarListError(error: unknown) {
   if (error instanceof GoogleCalendarError) {
-    if (error.status === 401) return { status: 401, message: "Google Calendar authorization expired. Please reconnect Google Calendar." };
+    if (error.status === 401) return { status: 401, message: "Google Calendar authorization expired. Please reconnect Google Calendar.", reconnect: true };
     if (error.status === 403 && ["insufficientPermissions", "insufficient_scope", "ACCESS_TOKEN_SCOPE_INSUFFICIENT"].includes(error.reason ?? "")) {
-      return { status: 403, message: "Google Calendar read access was not granted. Please reconnect Google Calendar." };
+      return { status: 403, message: "Google Calendar read access was not granted. Please reconnect Google Calendar.", reconnect: true };
     }
     if (error.status === 403 && ["accessNotConfigured", "SERVICE_DISABLED"].includes(error.reason ?? "")) {
       return { status: 403, message: "Google Calendar API is not enabled for this Google Cloud project." };
@@ -36,7 +36,10 @@ export async function GET(request: NextRequest) {
         hasCalendarScope: token?.oauthScope ? token.oauthScope.split(" ").includes(CALENDAR_SCOPE) : null,
       };
       if (!token || (!token.accessToken && !token.refreshToken)) {
-        return Response.json({ error: "Google Calendar authorization is missing. Please reconnect Google Calendar." }, { status: 401 });
+        return Response.json({ error: "Google Calendar authorization is missing. Please reconnect Google Calendar.", reconnect: true }, { status: 401 });
+      }
+      if (tokenState.hasCalendarScope === false) {
+        return Response.json({ error: "Google Calendar read access was not granted. Please reconnect Google Calendar.", reconnect: true }, { status: 403 });
       }
       calendars = await fetchCalendarChoices(await usableAccessToken(token));
       selectedIds = calendars.filter((calendar) => calendar.selected || calendar.primary).map((calendar) => calendar.id);
@@ -51,7 +54,7 @@ export async function GET(request: NextRequest) {
       googleReason: error instanceof GoogleCalendarError ? error.reason : undefined,
       ...tokenState,
     });
-    return Response.json({ error: failure.message }, { status: failure.status });
+    return Response.json({ error: failure.message, reconnect: "reconnect" in failure && failure.reconnect === true }, { status: failure.status });
   }
 }
 
