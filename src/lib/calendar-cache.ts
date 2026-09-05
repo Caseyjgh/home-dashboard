@@ -58,6 +58,16 @@ export async function saveCalendarTimeZone(email: string, timeZone: string) {
   await redis().set(key(email, "timezone"), timeZone);
 }
 
+export async function clearCalendarData(email: string) {
+  await Promise.all([
+    "events",
+    "calendars",
+    "selected",
+    "timezone",
+    "refresh-cooldown",
+  ].map((suffix) => redis().del(key(email, suffix))));
+}
+
 export async function beginRefresh(email: string) {
   const cooldownKey = key(email, "refresh-cooldown");
   const result = await redis().set(cooldownKey, new Date().toISOString(), {

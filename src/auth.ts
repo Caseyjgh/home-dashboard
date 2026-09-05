@@ -11,7 +11,7 @@ export const { handlers, auth } = NextAuth({
         params: {
           scope: "openid email profile https://www.googleapis.com/auth/calendar.readonly",
           access_type: "offline",
-          prompt: "consent",
+          prompt: "select_account consent",
           response_type: "code",
         },
       },

@@ -314,13 +314,28 @@ export default function Home() {
 
   async function reconnectGoogleCalendar() {
     setCalendarNotice("Starting a fresh Google Calendar connection…");
+    const disconnectResponse = await fetch("/api/calendar/disconnect", { method: "POST" });
+    if (!disconnectResponse.ok) {
+      setCalendarNotice((await apiError(disconnectResponse, "Unable to reset Google Calendar")).message);
+      return;
+    }
     await signOut({ redirect: false });
     await signIn("google", { redirectTo: "/?calendarReconnect=complete" }, {
       scope: `openid email profile ${CALENDAR_SCOPE}`,
       access_type: "offline",
-      prompt: "consent",
+      prompt: "select_account consent",
       include_granted_scopes: "true",
     });
+  }
+
+  async function signOutAndResetCalendar() {
+    setCalendarNotice("Signing out and resetting Calendar…");
+    const response = await fetch("/api/calendar/disconnect", { method: "POST" });
+    if (!response.ok) {
+      setCalendarNotice((await apiError(response, "Unable to reset Google Calendar")).message);
+      return;
+    }
+    await signOut({ redirectTo: "/" });
   }
 
   return (
@@ -340,7 +355,7 @@ export default function Home() {
                 <strong>{calendar.account.name || "Google account"}</strong>
                 <span>{calendar.account.email}</span>
                 <button type="button" onClick={reconnectGoogleCalendar}>Reconnect Google Calendar</button>
-                <button type="button" onClick={() => void signOut({ redirectTo: "/" })}>Sign out</button>
+                <button type="button" onClick={() => void signOutAndResetCalendar()}>Sign out &amp; reset Calendar</button>
               </div>
             </details>
           )}
