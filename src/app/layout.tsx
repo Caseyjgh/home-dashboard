@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Home — Personal Dashboard",
-  description: "A calm, focused place to begin the day.",
+  title: "Home Command Center",
+  description: "Calendar, priorities, and daily recipes in one dashboard.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -7,7 +7,7 @@ A calm personal start page built with Next.js, TypeScript, and Tailwind CSS. It 
 - Date navigation, manual refresh, and a server-enforced five-minute refresh cooldown
 - Quick links for Gmail, Google Calendar, Spotify, and GitHub
 - A task list stored privately in the browser
-- A 25-minute focus timer
+- An editable daily recipe plan for breakfast, lunch, and dinner
 - Responsive styling for desktop and mobile
 
 ## Local development

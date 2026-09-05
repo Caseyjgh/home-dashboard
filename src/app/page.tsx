@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { signIn, signOut } from "next-auth/react";
 import type { CalendarCache, CalendarChoice, CalendarEvent } from "@/lib/calendar-types";
 
 type Task = { id: number; label: string; done: boolean };
+type DailyRecipe = { id: "breakfast" | "lunch" | "dinner"; label: string; recipe: string };
 type CalendarState = {
   loading: boolean;
   configured: boolean;
@@ -19,24 +20,17 @@ type CalendarState = {
 
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 
-const quickLinks = [
-  { label: "Gmail", detail: "Inbox", href: "https://mail.google.com", tone: "brick" },
-  { label: "Calendar", detail: "Plan the day", href: "https://calendar.google.com", tone: "navy" },
-  { label: "Spotify", detail: "Listen", href: "https://open.spotify.com", tone: "green" },
-  { label: "GitHub", detail: "Build", href: "https://github.com", tone: "gold" },
-];
-
 const initialTasks: Task[] = [
   { id: 1, label: "Review today’s calendar", done: true },
   { id: 2, label: "Choose the day’s top priority", done: false },
   { id: 3, label: "Clear the inbox", done: false },
 ];
 
-function formatTime(seconds: number) {
-  const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
-  const remainder = (seconds % 60).toString().padStart(2, "0");
-  return `${minutes}:${remainder}`;
-}
+const initialRecipes: DailyRecipe[] = [
+  { id: "breakfast", label: "Breakfast", recipe: "" },
+  { id: "lunch", label: "Lunch", recipe: "" },
+  { id: "dinner", label: "Dinner", recipe: "" },
+];
 
 function localDateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -88,9 +82,8 @@ async function apiJson<T>(response: Response, fallback: string) {
 export default function Home() {
   const [now, setNow] = useState<Date | null>(null);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [dailyRecipes, setDailyRecipes] = useState<DailyRecipe[]>(initialRecipes);
   const [taskLabel, setTaskLabel] = useState("");
-  const [seconds, setSeconds] = useState(25 * 60);
-  const [running, setRunning] = useState(false);
   const [calendar, setCalendar] = useState<CalendarState>({
     loading: true,
     configured: false,
@@ -109,6 +102,7 @@ export default function Home() {
   const [loadingCalendars, setLoadingCalendars] = useState(false);
   const [savingCalendars, setSavingCalendars] = useState(false);
   const tasksLoaded = useRef(false);
+  const recipesLoaded = useRef(false);
   const reconnectCompletionStarted = useRef(false);
 
   useEffect(() => {
@@ -120,7 +114,13 @@ export default function Home() {
         try { setTasks(JSON.parse(saved) as Task[]); }
         catch { window.localStorage.removeItem("home-dashboard-tasks"); }
       }
+      const savedRecipes = window.localStorage.getItem("home-dashboard-daily-recipes");
+      if (savedRecipes) {
+        try { setDailyRecipes(JSON.parse(savedRecipes) as DailyRecipe[]); }
+        catch { window.localStorage.removeItem("home-dashboard-daily-recipes"); }
+      }
       tasksLoaded.current = true;
+      recipesLoaded.current = true;
     }, 0);
     const clock = window.setInterval(() => setNow(new Date()), 1000);
     return () => { window.clearTimeout(initialize); window.clearInterval(clock); };
@@ -172,6 +172,10 @@ export default function Home() {
   }, [tasks]);
 
   useEffect(() => {
+    if (recipesLoaded.current) window.localStorage.setItem("home-dashboard-daily-recipes", JSON.stringify(dailyRecipes));
+  }, [dailyRecipes]);
+
+  useEffect(() => {
     const controller = new AbortController();
     fetch("/api/calendar", { signal: controller.signal })
       .then(async (response) => {
@@ -185,25 +189,6 @@ export default function Home() {
       });
     return () => controller.abort();
   }, []);
-
-  useEffect(() => {
-    if (!running) return;
-    const timer = window.setInterval(() => {
-      setSeconds((current) => {
-        if (current <= 1) { setRunning(false); return 25 * 60; }
-        return current - 1;
-      });
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [running]);
-
-  const greeting = useMemo(() => {
-    if (!now) return "Welcome home";
-    const hour = now.getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  }, [now]);
 
   function addTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -363,29 +348,13 @@ export default function Home() {
       </header>
 
       <div className="dashboard" id="top">
-        <section className="hero">
+        <section className="command-intro">
           <div>
-            <p className="eyebrow">Personal dashboard</p>
-            <h1>{greeting}, Casey.</h1>
-            <p className="hero-copy">A quiet place to start the day, focus on what matters, and keep everything close at hand.</p>
+            <p className="eyebrow">Home dashboard</p>
+            <h1>Command center</h1>
+            <p>Calendar, priorities, and today’s meals in one place.</p>
           </div>
           <div className="clock" aria-label="Current time">{now?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) ?? "—:—"}</div>
-        </section>
-
-        <section className="quick-section" aria-labelledby="quick-heading">
-          <div className="section-heading">
-            <div><p className="eyebrow">Shortcuts</p><h2 id="quick-heading">Open your day</h2></div>
-            <span className="hint">Opens in a new tab</span>
-          </div>
-          <div className="quick-grid">
-            {quickLinks.map((link, index) => (
-              <a className={`quick-card ${link.tone}`} href={link.href} target="_blank" rel="noreferrer" key={link.label}>
-                <span className="card-index">0{index + 1}</span>
-                <div><strong>{link.label}</strong><span>{link.detail}</span></div>
-                <span className="arrow" aria-hidden="true">↗</span>
-              </a>
-            ))}
-          </div>
         </section>
 
         <section className="calendar-panel" aria-labelledby="calendar-heading">
@@ -500,13 +469,23 @@ export default function Home() {
             </form>
           </section>
 
-          <section className="panel focus-panel" aria-labelledby="focus-heading">
-            <div><p className="eyebrow light">Focus ritual</p><h2 id="focus-heading">Make space for deep work.</h2></div>
-            <div className="timer-wrap"><span className="timer">{formatTime(seconds)}</span><span className="timer-label">minutes of focus</span></div>
-            <div className="timer-actions">
-              <button className="primary-button" onClick={() => setRunning((current) => !current)}>{running ? "Pause" : "Start focus"}</button>
-              <button className="text-button" onClick={() => { setRunning(false); setSeconds(25 * 60); }}>Reset</button>
+          <section className="panel recipes-panel" aria-labelledby="recipes-heading">
+            <div className="section-heading compact">
+              <div><p className="eyebrow light">Today</p><h2 id="recipes-heading">Daily recipes</h2></div>
             </div>
+            <div className="recipe-list">
+              {dailyRecipes.map((meal) => (
+                <label key={meal.id}>
+                  <span>{meal.label}</span>
+                  <input
+                    value={meal.recipe}
+                    onChange={(event) => setDailyRecipes((current) => current.map((item) => item.id === meal.id ? { ...item, recipe: event.target.value } : item))}
+                    placeholder={`Add a ${meal.label.toLowerCase()} recipe`}
+                  />
+                </label>
+              ))}
+            </div>
+            <p className="recipe-note">Your meal plan stays private in this browser.</p>
           </section>
         </div>
 
