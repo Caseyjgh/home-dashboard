@@ -109,6 +109,7 @@ export default function Home() {
   const [loadingCalendars, setLoadingCalendars] = useState(false);
   const [savingCalendars, setSavingCalendars] = useState(false);
   const tasksLoaded = useRef(false);
+  const reconnectCompletionStarted = useRef(false);
 
   useEffect(() => {
     const initialize = window.setTimeout(() => {
@@ -124,6 +125,47 @@ export default function Home() {
     const clock = window.setInterval(() => setNow(new Date()), 1000);
     return () => { window.clearTimeout(initialize); window.clearInterval(clock); };
   }, []);
+
+  useEffect(() => {
+    if (calendar.loading || !calendar.authenticated || reconnectCompletionStarted.current) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("calendarReconnect") !== "complete") return;
+    reconnectCompletionStarted.current = true;
+    const completion = window.setTimeout(() => {
+      setLoadingCalendars(true);
+      setRefreshingCalendar(true);
+      setCalendarNotice("Finishing Google Calendar reconnection…");
+      void fetch("/api/calendar/reconnect", { method: "POST" })
+      .then(async (response) => {
+        if (!response.ok) {
+          const failure = await apiError(response, "Unable to finish reconnecting Google Calendar");
+          setCalendarReconnectRequired(failure.reconnect);
+          throw new Error(failure.message);
+        }
+        return apiJson<{
+          calendars: CalendarChoice[];
+          selectedIds: string[];
+          cache: CalendarCache;
+          calendarAccess: true;
+        }>(response, "Unable to finish reconnecting Google Calendar");
+      })
+      .then((data) => {
+        setCalendarChoices(data.calendars);
+        setCalendar((current) => ({ ...current, cache: data.cache, selectedIds: data.selectedIds, calendarAccess: true }));
+        setCalendarReconnectRequired(false);
+        setCalendarNotice("Google Calendar reconnected and refreshed.");
+        window.history.replaceState({}, "", url.pathname);
+      })
+      .catch((error: unknown) => {
+        setCalendarNotice(error instanceof Error ? error.message : "Unable to finish reconnecting Google Calendar.");
+      })
+      .finally(() => {
+        setLoadingCalendars(false);
+        setRefreshingCalendar(false);
+      });
+    }, 0);
+    return () => window.clearTimeout(completion);
+  }, [calendar.authenticated, calendar.loading]);
 
   useEffect(() => {
     if (tasksLoaded.current) window.localStorage.setItem("home-dashboard-tasks", JSON.stringify(tasks));
@@ -270,8 +312,10 @@ export default function Home() {
     }
   }
 
-  function reconnectGoogleCalendar() {
-    void signIn("google", { redirectTo: "/" }, {
+  async function reconnectGoogleCalendar() {
+    setCalendarNotice("Starting a fresh Google Calendar connection…");
+    await signOut({ redirect: false });
+    await signIn("google", { redirectTo: "/?calendarReconnect=complete" }, {
       scope: `openid email profile ${CALENDAR_SCOPE}`,
       access_type: "offline",
       prompt: "consent",
