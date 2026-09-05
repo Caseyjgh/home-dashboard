@@ -24,6 +24,7 @@ export const { handlers, auth } = NextAuth({
         token.accessToken = account.access_token;
         token.expiresAt = account.expires_at;
         token.refreshToken = account.refresh_token;
+        token.oauthScope = account.scope;
       }
       return token;
     },
@@ -35,5 +36,6 @@ declare module "@auth/core/jwt" {
     accessToken?: string;
     expiresAt?: number;
     refreshToken?: string;
+    oauthScope?: string;
   }
 }

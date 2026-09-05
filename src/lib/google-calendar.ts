@@ -13,7 +13,21 @@ type GoogleEvent = {
 type GooglePage<T> = { items?: T[]; nextPageToken?: string };
 
 export class GoogleCalendarError extends Error {
-  constructor(public status: number, message: string) { super(message); }
+  constructor(public status: number, message: string, public reason?: string) { super(message); }
+}
+
+type GoogleApiErrorBody = {
+  error?: {
+    message?: string;
+    status?: string;
+    errors?: Array<{ reason?: string }>;
+    details?: Array<{ reason?: string }>;
+  };
+};
+
+function safeGoogleReason(body: GoogleApiErrorBody) {
+  const reason = body.error?.errors?.[0]?.reason || body.error?.details?.find((detail) => detail.reason)?.reason || body.error?.status;
+  return typeof reason === "string" && /^[A-Za-z0-9_.-]{1,80}$/.test(reason) ? reason : undefined;
 }
 
 function timeZoneOffset(date: Date, timeZone: string) {
@@ -78,8 +92,11 @@ async function googleFetch<T>(url: string, accessToken: string): Promise<T> {
       cache: "no-store",
     });
     if (response.ok) return response.json() as Promise<T>;
-    const retryable = response.status === 403 || response.status === 429 || response.status >= 500;
-    if (!retryable || attempt === 3) throw new GoogleCalendarError(response.status, `Google Calendar returned ${response.status}`);
+    const body = await response.json().catch(() => ({})) as GoogleApiErrorBody;
+    const reason = safeGoogleReason(body);
+    const retryable403 = response.status === 403 && ["rateLimitExceeded", "userRateLimitExceeded"].includes(reason ?? "");
+    const retryable = retryable403 || response.status === 429 || response.status >= 500;
+    if (!retryable || attempt === 3) throw new GoogleCalendarError(response.status, `Google Calendar returned ${response.status}`, reason);
     await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt));
   }
   throw new GoogleCalendarError(500, "Google Calendar retry limit reached");
@@ -97,7 +114,7 @@ export async function usableAccessToken(token: JWT) {
       refresh_token: token.refreshToken,
     }),
   });
-  if (!response.ok) throw new GoogleCalendarError(response.status, "Google authorization could not be refreshed");
+  if (!response.ok) throw new GoogleCalendarError(401, "Google authorization could not be refreshed", "refresh_failed");
   const data = (await response.json()) as { access_token: string };
   return data.access_token;
 }

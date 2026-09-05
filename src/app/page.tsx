@@ -61,6 +61,23 @@ function eventTime(event: CalendarEvent, timeZone: string) {
   return `${format(event.start)} – ${format(event.end)}`;
 }
 
+async function apiErrorMessage(response: Response, fallback: string) {
+  try {
+    const data = await response.json() as { error?: unknown };
+    return typeof data.error === "string" && data.error ? data.error : `${fallback} (${response.status})`;
+  } catch {
+    return `${fallback} (${response.status})`;
+  }
+}
+
+async function apiJson<T>(response: Response, fallback: string) {
+  try {
+    return await response.json() as T;
+  } catch {
+    throw new Error(`${fallback}: the server returned an invalid response.`);
+  }
+}
+
 export default function Home() {
   const [now, setNow] = useState<Date | null>(null);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -202,8 +219,9 @@ export default function Home() {
     setCalendarNotice(null);
     try {
       const response = await fetch("/api/calendar/calendars");
-      const data = await response.json() as { calendars?: CalendarChoice[]; error?: string };
-      if (!response.ok || !data.calendars) throw new Error(data.error || "Unable to load calendars");
+      if (!response.ok) throw new Error(await apiErrorMessage(response, "Unable to load calendars"));
+      const data = await apiJson<{ calendars?: CalendarChoice[] }>(response, "Unable to load calendars");
+      if (!data.calendars) throw new Error("The calendar service returned an invalid response.");
       setCalendarChoices(data.calendars);
     } catch (error) {
       setCalendarNotice(error instanceof Error ? error.message : "Unable to load calendars.");
@@ -225,8 +243,8 @@ export default function Home() {
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Denver",
         }),
       });
-      const data = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(data.error || "Unable to save calendars");
+      if (!response.ok) throw new Error(await apiErrorMessage(response, "Unable to save calendars"));
+      await apiJson(response, "Unable to save calendars");
       const selectedIds = calendarChoices.filter((choice) => choice.selected).map((choice) => choice.id);
       setCalendar((current) => ({ ...current, selectedIds }));
       setShowCalendarSettings(false);
