@@ -76,7 +76,7 @@ empty assignments only. No secret belongs in a Git commit or kiosk command.
 The existing shared Redis credentials also mean **shared calendar data**, keyed
 by Google account. Manual refresh, calendar selection, and the existing
 "Sign out & reset Calendar" action affect that account's cache across both
-versions. Tasks and recipes are browser-local, separate for each origin/profile.
+versions. Dinners and to-dos now use separate persistent Redis keys for the same Google account; see [household storage](household-data.md). Older browser-local entries can be imported explicitly in Settings.
 An isolated database can be configured with branch-specific KV variables if
 independent data is needed; this change does not migrate or alter the database.
 
@@ -135,8 +135,8 @@ Kiosk mode removes browser chrome; the remaining flags suppress initial setup an
 browser interruption UI. No speculative memory flags are required. Keep GPU
 acceleration, process isolation, sandboxing, and browser memory-pressure handling
 at their defaults. Do not use `--no-sandbox`, `--single-process`,
-`--ignore-certificate-errors`, or disable the GPU. Do not use incognito: cookies,
-tasks, and recipes must survive a browser restart. Do not routinely clear the
+`--ignore-certificate-errors`, or disable the GPU. Do not use incognito: cookies
+and sign-in must survive a browser restart; dinners and to-dos are stored on the server. Do not routinely clear the
 profile. Additional crash-bubble suppression flags are omitted because support
 varies by Chromium release; fix repeated crashes rather than masking them.
 
@@ -210,7 +210,7 @@ by this branch.
   is not automatically updated with new/changed Google events.
 - No full offline app shell or service worker is added. Previously displayed
   calendar data survives a transient failure in memory; a cold start needs network.
-  Local tasks/meals remain available after the page itself has loaded.
+  Previously loaded dinner/to-do data stays visible during a connection failure. A cold offline page load is not supported.
 - No forced periodic reload. If real-device measurements eventually show Chromium
   growth, an optional off-hours browser restart can be an operational fallback.
   First measure the cause and close Chromium cleanly; never use frequent reloads
@@ -238,12 +238,12 @@ CHROMIUM_PATH=/usr/bin/chromium node tests/kiosk.browser.mjs
 ```
 
 The browser test uses mocked API/OAuth responses and an isolated Chromium profile.
-It checks layout, local tasks/meals, calendar controls, backoff, storage errors,
+It checks layout, calendar controls, backoff,
 and accelerated idle behavior. It does not prove live Google OAuth, Redis access,
 or real 1 GB ARM device stability. See `docs/pi5-audit.md` for measured results.
 
 Before leaving the Pi unattended, verify real Google sign-in, calendar selection,
-manual refresh, task/meal persistence after a clean reboot, Wi-Fi interruption and
+manual refresh, shared dinner/to-do persistence after a clean reboot, Wi-Fi interruption and
 recovery, and midnight behavior. Leave it running 24–72 hours and compare Chromium
 memory using its task manager or OS process metrics at consistent idle points.
 Investigate a sustained upward trend, OOM events, excessive swapping, or heat.

@@ -1,3 +1,5 @@
+> Historical baseline audit before the household redesign. Browser-local task/meal descriptions and old bundle figures below describe that baseline. Current storage, routes and validation are documented in [household-data.md](household-data.md).
+
 # Pi 5 branch audit
 
 Audited 2026-09-13 for Raspberry Pi 5, 1 GB RAM, Chromium kiosk at 1920×1080.

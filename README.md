@@ -1,14 +1,14 @@
 # Home Dashboard
 
-A calm personal start page built with Next.js, TypeScript, and Tailwind CSS. It includes:
+A lightweight household display for Raspberry Pi 5, desktop, and mobile. Home uses a large daily calendar beside Dinner and Lilly/Sawyer to-dos. Meals and tasks are stored in the existing Redis database, shared by devices signed into the same Google account.
 
-- A live local clock and date
-- Cached events from selected private Google calendars using read-only OAuth access
-- Date navigation, manual refresh, and a server-enforced five-minute refresh cooldown
-- Quick links for Gmail, Google Calendar, Spotify, and GitHub
-- A task list stored privately in the browser
-- An editable daily recipe plan for breakfast, lunch, and dinner
-- Responsive styling for desktop and mobile
+- `/`: cached calendar, today's dinner, incomplete tasks
+- `/dinner`: dinner editing, date changes and deletion
+- `/todos`: task editing, completion, reassignment and ordering
+- `/calendar-settings`: existing Google calendar selection
+- `/settings`: account controls and explicit import of older browser-local entries
+
+See [household storage and operation](docs/household-data.md).
 
 ## Local development
 
@@ -24,6 +24,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ```bash
 npm run lint
 npm run typecheck
+npm test
 npm run build
 ```
 

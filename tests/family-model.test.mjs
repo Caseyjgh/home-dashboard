@@ -1,0 +1,40 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { applyFamilyCommand, emptyFamily, personTodos } from '../src/lib/family-model.ts';
+let id = 0;
+const apply = (data, command) => applyFamilyCommand(data, command, { id: () => String(++id), now: '2026-09-13T12:00:00Z', hash: value => value });
+const dinner = { type: 'saveDinner', date: '2026-09-13', title: 'Soup', description: 'With bread', link: 'https://example.org/recipe' };
+test('dinner persists through serialization, moves without duplication, validates links and dates', () => {
+ const original = emptyFamily();
+ let data = JSON.parse(JSON.stringify(apply(original, dinner)));
+ assert.equal(original.dinners.length, 0);
+ const key = data.dinners[0].id;
+ data = apply(data, { ...dinner, id: key, date: '2026-09-14' });
+ assert.equal(data.dinners.length, 1); assert.equal(data.dinners[0].date, '2026-09-14');
+ assert.throws(() => apply(data, { ...dinner, date: '2026-09-14' }), /already exists/);
+ assert.throws(() => apply(data, { ...dinner, link: 'javascript:alert(1)' }), /http/);
+ assert.throws(() => apply(data, { ...dinner, date: '2026-02-30' }), /valid date/);
+ assert.equal(apply(data, { type: 'deleteDinner', id: key }).dinners.length, 0);
+});
+test('tasks can reorder, complete, restore, reassign, edit and delete', () => {
+ let data = apply(emptyFamily(), { type: 'addTodo', text: 'A', person: 'Lilly' });
+ data = apply(data, { type: 'addTodo', text: 'B', person: 'Lilly' });
+ const [a,b] = data.todos;
+ data = apply(data, { type: 'moveTodo', id: b.id, direction: 'up' });
+ assert.deepEqual(personTodos(data, 'Lilly').map(t => t.text), ['B','A']);
+ data = apply(data, { type: 'completeTodo', id: a.id, completed: true });
+ assert.deepEqual(data.todos.filter(t => !t.completed).map(t => t.text), ['B']);
+ data = apply(data, { type: 'completeTodo', id: a.id, completed: false });
+ data = apply(data, { type: 'editTodo', id: a.id, text: 'Changed', person: 'Sawyer' });
+ assert.equal(personTodos(data, 'Sawyer')[0].createdAt, a.createdAt);
+ assert.equal(personTodos(data, 'Sawyer')[0].text, 'Changed');
+ assert.equal(apply(data, { type: 'deleteTodo', id: a.id }).todos.length, 1);
+});
+test('legacy import is atomic and idempotent', () => {
+ const command = { type: 'importLegacy', person: 'Sawyer', tasks: [{id: 1,label:'Old task',done:true}], dinner: {date:'2026-09-13',title:'Soup'} };
+ const data = apply(emptyFamily(), command);
+ const again = apply(data, command);
+ assert.equal(again.todos.length, 1); assert.equal(again.dinners.length, 1); assert.equal(again.todos[0].completed, true);
+ assert.throws(() => apply(data, {...command, tasks:[{id:2,label:'Other',done:false}], dinner:{date:'2026-09-13',title:'Other'}}), /already exists/);
+ assert.equal(data.todos.length, 1);
+});
