@@ -116,3 +116,62 @@ footer { display:flex; justify-content:space-between; padding:20px 0 36px; borde
 @media (max-width:800px) { .topbar{grid-template-columns:1fr 1fr}.date-label{display:none}.content-grid{grid-template-columns:1fr}.clock{align-self:flex-start} }
 @media (max-width:540px) { .dashboard{width:min(100% - 30px,1180px)}.topbar{height:66px;padding:0 15px}.github-link{display:none}.account-summary{display:none}.command-intro{display:block;padding:34px 0 24px}.command-intro h1{font-size:43px}.clock{margin-top:22px;font-size:30px}.calendar-heading{align-items:flex-start;flex-direction:column}.calendar-actions{width:100%}.calendar-actions button{flex:1}.calendar-connect,.calendar-warning{align-items:flex-start;flex-direction:column}.calendar-options{grid-template-columns:1fr}.event-list li{grid-template-columns:1fr;gap:7px}.panel{min-height:390px}footer{flex-direction:column;gap:7px} }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
+
+/* pi5-vercel is a dedicated kiosk branch; no client/device flag is needed. */
+html { scroll-behavior:auto; overflow-x:clip; }
+main { background:var(--cream); }
+button,summary,a,input { touch-action:manipulation; }
+button,summary,.brand,.github-link { min-height:44px; }
+button { min-width:44px; }
+input:not([type="checkbox"]) { min-height:44px; }
+.brand,.github-link { display:flex; align-items:center; }
+.dashboard,.panel,.calendar-panel,.content-grid,.event-list li > div { min-width:0; }
+.task-list li { grid-template-columns:44px minmax(0,1fr) 44px; font-size:18px; }
+.task-list span,.event-list strong,.event-list span,.calendar-options label { overflow-wrap:anywhere; }
+.check { width:44px; height:44px; }
+.remove { opacity:1; min-height:44px; transition:none; }
+.date-navigation button { min-width:44px; height:44px; font-size:16px; }
+.calendar-actions button,.calendar-connect button,.save-calendars,.calendar-warning button,
+.account-popover button,.calendar-options label { font-size:16px; }
+.calendar-options label { min-height:44px; }
+.calendar-options input { width:22px; height:22px; flex-shrink:0; }
+.event-list time,.event-list span,.last-refreshed,.recipe-note,.calendar-warning,
+.account-menu summary,.account-popover span,.date-label,.task-count,footer { font-size:16px; }
+.eyebrow,.event-group-label,.recipe-list label span { font-size:14px; }
+.event-list strong,.recipe-list input { font-size:22px; }
+.calendar-connect p { font-size:17px; }
+.account-popover { top:48px; box-shadow:0 3px 10px rgba(16,35,62,.12); }
+.storage-warning { color:var(--brown); font-size:16px; }
+:focus-visible { outline:3px solid var(--gold); outline-offset:3px; }
+.quick-card:hover { transform:none; box-shadow:none; }
+@media (min-width:1200px) and (min-height:720px) and (orientation:landscape) {
+  main { height:100dvh; min-height:0; }
+  .dashboard {
+    width:calc(100% - 48px); height:calc(100dvh - 76px);
+    display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr) auto; gap:14px 20px;
+  }
+  .command-intro { grid-column:1 / -1; padding:18px 0 4px; }
+  .command-intro h1 { font-size:48px; }
+  .command-intro .eyebrow { margin-bottom:8px; }
+  .command-intro p:not(.eyebrow) { font-size:18px; }
+  .clock { font-size:60px; }
+  .calendar-panel { grid-column:1; grid-row:2; margin:0; padding:24px; overflow:auto; }
+  .calendar-heading { align-items:flex-start; flex-wrap:wrap; gap:12px; }
+  .content-grid { grid-column:2; grid-row:2; grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) minmax(0,1fr); min-height:0; padding:0; }
+  .panel { min-height:0; padding:20px 24px; overflow:auto; }
+  .event-list li { gap:16px; }
+  .task-list { margin:12px 0 16px; }
+  .recipes-panel .section-heading { margin-bottom:8px; }
+  .recipes-panel .eyebrow { margin-bottom:6px; }
+  .recipes-panel h2 { line-height:1.1; }
+  .recipe-list { margin-top:0; gap:8px; }
+  .recipe-list label span { margin-bottom:4px; }
+  .recipe-list input { padding:5px 0; line-height:1.25; }
+  .recipe-note { margin:8px 0 0; }
+  footer { grid-column:1 / -1; padding:10px 0 14px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation:none!important; }
+}
+@media (max-width:540px) { .github-link { display:none; } }

@@ -48,3 +48,10 @@ Calendar events, selected-calendar preferences, user timezone, last successful r
 ## Deployment
 
 The application uses the Next.js App Router and can be deployed directly to Vercel. Every push to the connected `main` branch can trigger a production deployment through the existing Vercel integration.
+
+## Raspberry Pi branch
+
+`pi5-vercel` is the dedicated Pi 5 / 1 GB Chromium kiosk target, based on `pi5`.
+It uses Vercel Preview deployments; `main` remains production. See
+[Pi kiosk and Vercel setup](docs/pi5-kiosk.md) and the
+[performance audit](docs/pi5-audit.md) before deploying a device.

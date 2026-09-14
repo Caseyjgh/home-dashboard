@@ -1,22 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { signIn, signOut } from "next-auth/react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useMinuteClock } from "@/hooks/use-minute-clock";
+import { useCachedCalendar } from "@/hooks/use-cached-calendar";
+import { requestJson } from "@/lib/client-request";
+import { readLocal, validTasks, validRecipes, type Task, type DailyRecipe } from "@/lib/local-data";
 import type { CalendarCache, CalendarChoice, CalendarEvent } from "@/lib/calendar-types";
-
-type Task = { id: number; label: string; done: boolean };
-type DailyRecipe = { id: "breakfast" | "lunch" | "dinner"; label: string; recipe: string };
-type CalendarState = {
-  loading: boolean;
-  configured: boolean;
-  authenticated: boolean;
-  cache: CalendarCache | null;
-  selectedIds: string[];
-  missingVariables: string[];
-  timeZone?: string;
-  account?: { name: string | null; email: string } | null;
-  calendarAccess?: boolean | null;
-};
 
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 
@@ -59,39 +48,20 @@ function eventTime(event: CalendarEvent, timeZone: string) {
   return `${format(event.start)} – ${format(event.end)}`;
 }
 
-async function apiError(response: Response, fallback: string) {
-  try {
-    const data = await response.json() as { error?: unknown; reconnect?: unknown };
-    return {
-      message: typeof data.error === "string" && data.error ? data.error : `${fallback} (${response.status})`,
-      reconnect: data.reconnect === true,
-    };
-  } catch {
-    return { message: `${fallback} (${response.status})`, reconnect: false };
-  }
-}
-
-async function apiJson<T>(response: Response, fallback: string) {
-  try {
-    return await response.json() as T;
-  } catch {
-    throw new Error(`${fallback}: the server returned an invalid response.`);
-  }
+type ApiData = { error?: string; reconnect?: boolean };
+function apiError(response: Response, data: ApiData, fallback: string) {
+  return {
+    message: typeof data.error === "string" && data.error ? data.error : `${fallback} (${response.status})`,
+    reconnect: data.reconnect === true,
+  };
 }
 
 export default function Home() {
-  const [now, setNow] = useState<Date | null>(null);
+  const now = useMinuteClock();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [dailyRecipes, setDailyRecipes] = useState<DailyRecipe[]>(initialRecipes);
   const [taskLabel, setTaskLabel] = useState("");
-  const [calendar, setCalendar] = useState<CalendarState>({
-    loading: true,
-    configured: false,
-    authenticated: false,
-    cache: null,
-    selectedIds: [],
-    missingVariables: [],
-  });
+  const { calendar, setCalendar, connection, reloadCache } = useCachedCalendar();
   const [selectedDate, setSelectedDate] = useState("");
   const [refreshingCalendar, setRefreshingCalendar] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
@@ -104,52 +74,59 @@ export default function Home() {
   const tasksLoaded = useRef(false);
   const recipesLoaded = useRef(false);
   const reconnectCompletionStarted = useRef(false);
+  const requests = useRef<AbortController | null>(null);
+  const previousDay = useRef("");
+  const [storageNotice, setStorageNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    requests.current = controller;
+    return () => controller.abort();
+  }, []);
+
+  async function request<T>(url: string, options: RequestInit = {}) {
+    return requestJson<T>(url, { ...options, signal: requests.current?.signal });
+  }
 
   useEffect(() => {
     const initialize = window.setTimeout(() => {
-      setNow(new Date());
       setSelectedDate(localDateKey(new Date()));
-      const saved = window.localStorage.getItem("home-dashboard-tasks");
-      if (saved) {
-        try { setTasks(JSON.parse(saved) as Task[]); }
-        catch { window.localStorage.removeItem("home-dashboard-tasks"); }
-      }
-      const savedRecipes = window.localStorage.getItem("home-dashboard-daily-recipes");
-      if (savedRecipes) {
-        try { setDailyRecipes(JSON.parse(savedRecipes) as DailyRecipe[]); }
-        catch { window.localStorage.removeItem("home-dashboard-daily-recipes"); }
-      }
-      tasksLoaded.current = true;
-      recipesLoaded.current = true;
+      try {
+        const saved = readLocal("home-dashboard-tasks", validTasks);
+        if (saved) setTasks(saved);
+        tasksLoaded.current = true;
+      } catch { setStorageNotice("Saved tasks could not be read. Changes will not be saved in this session."); }
+      try {
+        const saved = readLocal("home-dashboard-daily-recipes", validRecipes);
+        if (saved) setDailyRecipes(saved);
+        recipesLoaded.current = true;
+      } catch { setStorageNotice("Saved meals could not be read. Changes will not be saved in this session."); }
     }, 0);
-    const clock = window.setInterval(() => setNow(new Date()), 1000);
-    return () => { window.clearTimeout(initialize); window.clearInterval(clock); };
+    return () => window.clearTimeout(initialize);
   }, []);
 
   useEffect(() => {
     if (calendar.loading || !calendar.authenticated || reconnectCompletionStarted.current) return;
     const url = new URL(window.location.href);
     if (url.searchParams.get("calendarReconnect") !== "complete") return;
-    reconnectCompletionStarted.current = true;
+    const controller = new AbortController();
     const completion = window.setTimeout(() => {
+      reconnectCompletionStarted.current = true;
       setLoadingCalendars(true);
       setRefreshingCalendar(true);
       setCalendarNotice("Finishing Google Calendar reconnection…");
-      void fetch("/api/calendar/reconnect", { method: "POST" })
-      .then(async (response) => {
+      void requestJson<ApiData & { calendars: CalendarChoice[]; selectedIds: string[]; cache: CalendarCache }>(
+        "/api/calendar/reconnect", { method: "POST", signal: controller.signal },
+      ).then(({ response, data }) => {
         if (!response.ok) {
-          const failure = await apiError(response, "Unable to finish reconnecting Google Calendar");
-          setCalendarReconnectRequired(failure.reconnect);
+          const failure = apiError(response, data, "Unable to finish reconnecting Google Calendar");
+          if (!controller.signal.aborted) setCalendarReconnectRequired(failure.reconnect);
           throw new Error(failure.message);
         }
-        return apiJson<{
-          calendars: CalendarChoice[];
-          selectedIds: string[];
-          cache: CalendarCache;
-          calendarAccess: true;
-        }>(response, "Unable to finish reconnecting Google Calendar");
+        return data;
       })
       .then((data) => {
+        if (controller.signal.aborted) return;
         setCalendarChoices(data.calendars);
         setCalendar((current) => ({ ...current, cache: data.cache, selectedIds: data.selectedIds, calendarAccess: true }));
         setCalendarReconnectRequired(false);
@@ -157,38 +134,29 @@ export default function Home() {
         window.history.replaceState({}, "", url.pathname);
       })
       .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
         setCalendarNotice(error instanceof Error ? error.message : "Unable to finish reconnecting Google Calendar.");
       })
       .finally(() => {
+        if (controller.signal.aborted) return;
         setLoadingCalendars(false);
         setRefreshingCalendar(false);
       });
     }, 0);
-    return () => window.clearTimeout(completion);
-  }, [calendar.authenticated, calendar.loading]);
+    return () => { window.clearTimeout(completion); controller.abort(); };
+  }, [calendar.authenticated, calendar.loading, setCalendar]);
 
   useEffect(() => {
-    if (tasksLoaded.current) window.localStorage.setItem("home-dashboard-tasks", JSON.stringify(tasks));
+    if (!tasksLoaded.current) return;
+    try { window.localStorage.setItem("home-dashboard-tasks", JSON.stringify(tasks)); }
+    catch { queueMicrotask(() => setStorageNotice("Tasks could not be saved. Browser storage may be full or unavailable.")); }
   }, [tasks]);
 
   useEffect(() => {
-    if (recipesLoaded.current) window.localStorage.setItem("home-dashboard-daily-recipes", JSON.stringify(dailyRecipes));
+    if (!recipesLoaded.current) return;
+    try { window.localStorage.setItem("home-dashboard-daily-recipes", JSON.stringify(dailyRecipes)); }
+    catch { queueMicrotask(() => setStorageNotice("Meals could not be saved. Browser storage may be full or unavailable.")); }
   }, [dailyRecipes]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/calendar", { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Calendar request failed");
-        return response.json() as Promise<Omit<CalendarState, "loading">>;
-      })
-      .then((data) => setCalendar({ ...data, loading: false }))
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setCalendar({ loading: false, configured: false, authenticated: false, cache: null, selectedIds: [], missingVariables: [] });
-      });
-    return () => controller.abort();
-  }, []);
 
   function addTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -199,20 +167,34 @@ export default function Home() {
   }
 
   const calendarTimeZone = calendar.cache?.timeZone || calendar.timeZone || "America/Denver";
-  const selectedCalendarSet = new Set(calendarChoices
-    ? calendarChoices.filter((choice) => choice.selected).map((choice) => choice.id)
-    : calendar.selectedIds);
-  const dayEvents = (calendar.cache?.events ?? [])
-    .filter((event) => event.days.includes(selectedDate) && selectedCalendarSet.has(event.calendarId))
-    .sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.start.localeCompare(b.start));
+  const dayEvents = useMemo(() => {
+    const selectedCalendarSet = new Set(calendarChoices
+      ? calendarChoices.filter((choice) => choice.selected).map((choice) => choice.id)
+      : calendar.selectedIds);
+    return (calendar.cache?.events ?? [])
+      .filter((event) => event.days.includes(selectedDate) && selectedCalendarSet.has(event.calendarId))
+      .sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.start.localeCompare(b.start));
+  }, [calendar.cache, calendar.selectedIds, calendarChoices, selectedDate]);
   const allDayEvents = dayEvents.filter((event) => event.allDay);
   const timedEvents = dayEvents.filter((event) => !event.allDay);
   const todayKey = now ? localDateKey(now) : "";
+  useEffect(() => {
+    if (!todayKey) return;
+    const oldDay = previousDay.current;
+    previousDay.current = todayKey;
+    if (!oldDay || oldDay === todayKey) return;
+    const timer = window.setTimeout(() => {
+      setSelectedDate((current) => current === oldDay ? todayKey : current);
+      reloadCache();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [todayKey, reloadCache]);
   const dateIsCached = Boolean(
     calendar.cache && selectedDate >= calendar.cache.rangeStart && selectedDate < calendar.cache.rangeEnd,
   );
 
   async function refreshCalendar() {
+    if (refreshingCalendar) return;
     const nowMs = Date.now();
     if (cooldownUntil > nowMs) {
       const minutes = Math.max(1, Math.ceil((cooldownUntil - nowMs) / 60_000));
@@ -223,12 +205,11 @@ export default function Home() {
     setCalendarNotice(null);
     try {
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Denver";
-      const response = await fetch("/api/calendar/refresh", {
+      const { response, data } = await request<{ cache?: CalendarCache | null; error?: string; retryAfter?: number; reconnect?: boolean }>("/api/calendar/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ timeZone }),
       });
-      const data = await response.json() as { cache?: CalendarCache | null; error?: string; retryAfter?: number; reconnect?: boolean };
       if (data.cache) setCalendar((current) => ({ ...current, cache: data.cache ?? null }));
       setCalendarReconnectRequired(data.reconnect === true);
       if (response.status === 429) {
@@ -250,17 +231,16 @@ export default function Home() {
 
   async function openCalendarSettings() {
     setShowCalendarSettings(true);
-    if (calendarChoices) return;
+    if (calendarChoices || loadingCalendars) return;
     setLoadingCalendars(true);
     setCalendarNotice(null);
     try {
-      const response = await fetch("/api/calendar/calendars");
+      const { response, data } = await request<ApiData & { calendars?: CalendarChoice[] }>("/api/calendar/calendars");
       if (!response.ok) {
-        const failure = await apiError(response, "Unable to load calendars");
+        const failure = apiError(response, data, "Unable to load calendars");
         setCalendarReconnectRequired(failure.reconnect);
         throw new Error(failure.message);
       }
-      const data = await apiJson<{ calendars?: CalendarChoice[] }>(response, "Unable to load calendars");
       if (!data.calendars) throw new Error("The calendar service returned an invalid response.");
       setCalendarReconnectRequired(false);
       setCalendarChoices(data.calendars);
@@ -272,11 +252,11 @@ export default function Home() {
   }
 
   async function saveCalendarSelection() {
-    if (!calendarChoices) return;
+    if (!calendarChoices || savingCalendars) return;
     setSavingCalendars(true);
     setCalendarNotice(null);
     try {
-      const response = await fetch("/api/calendar/calendars", {
+      const { response, data } = await request<ApiData>("/api/calendar/calendars", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -284,8 +264,7 @@ export default function Home() {
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Denver",
         }),
       });
-      if (!response.ok) throw new Error((await apiError(response, "Unable to save calendars")).message);
-      await apiJson(response, "Unable to save calendars");
+      if (!response.ok) throw new Error(apiError(response, data, "Unable to save calendars").message);
       const selectedIds = calendarChoices.filter((choice) => choice.selected).map((choice) => choice.id);
       setCalendar((current) => ({ ...current, selectedIds }));
       setShowCalendarSettings(false);
@@ -297,30 +276,35 @@ export default function Home() {
     }
   }
 
+  async function connectGoogleCalendar() {
+    try {
+      const { signIn } = await import("next-auth/react");
+      await signIn("google", { redirectTo: "/" });
+    } catch { setCalendarNotice("Sign-in could not start. Check your connection and try again."); }
+  }
+
   async function reconnectGoogleCalendar() {
     setCalendarNotice("Starting a fresh Google Calendar connection…");
-    const disconnectResponse = await fetch("/api/calendar/disconnect", { method: "POST" });
-    if (!disconnectResponse.ok) {
-      setCalendarNotice((await apiError(disconnectResponse, "Unable to reset Google Calendar")).message);
-      return;
-    }
-    await signOut({ redirect: false });
-    await signIn("google", { redirectTo: "/?calendarReconnect=complete" }, {
-      scope: `openid email profile ${CALENDAR_SCOPE}`,
-      access_type: "offline",
-      prompt: "select_account consent",
-      include_granted_scopes: "true",
-    });
+    try {
+      const { response, data } = await request<ApiData>("/api/calendar/disconnect", { method: "POST" });
+      if (!response.ok) throw new Error(apiError(response, data, "Unable to reset Google Calendar").message);
+      const { signIn, signOut } = await import("next-auth/react");
+      await signOut({ redirect: false });
+      await signIn("google", { redirectTo: "/?calendarReconnect=complete" }, {
+        scope: `openid email profile ${CALENDAR_SCOPE}`,
+        access_type: "offline", prompt: "select_account consent", include_granted_scopes: "true",
+      });
+    } catch { setCalendarNotice("Reconnection could not finish. Check your connection and try again."); }
   }
 
   async function signOutAndResetCalendar() {
     setCalendarNotice("Signing out and resetting Calendar…");
-    const response = await fetch("/api/calendar/disconnect", { method: "POST" });
-    if (!response.ok) {
-      setCalendarNotice((await apiError(response, "Unable to reset Google Calendar")).message);
-      return;
-    }
-    await signOut({ redirectTo: "/" });
+    try {
+      const { response, data } = await request<ApiData>("/api/calendar/disconnect", { method: "POST" });
+      if (!response.ok) throw new Error(apiError(response, data, "Unable to reset Google Calendar").message);
+      const { signOut } = await import("next-auth/react");
+      await signOut({ redirectTo: "/" });
+    } catch { setCalendarNotice("Sign-out could not finish. Check your connection and try again."); }
   }
 
   return (
@@ -329,7 +313,7 @@ export default function Home() {
         <a className="brand" href="#top" aria-label="Home dashboard"><span className="brand-mark">H</span><span>Home</span></a>
         <p className="date-label">{now?.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) ?? "Loading today…"}</p>
         <div className="topbar-actions">
-          <a className="github-link" href="https://github.com/caseyjgh/home-dashboard" target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></a>
+          <a className="github-link" href="https://github.com/caseyjgh/home-dashboard">View source <span aria-hidden="true">↗</span></a>
           {calendar.authenticated && calendar.account && (
             <details className="account-menu">
               <summary aria-label="Google account menu">
@@ -380,6 +364,12 @@ export default function Home() {
           {calendar.cache && (
             <p className="last-refreshed">Last refreshed: {new Date(calendar.cache.refreshedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: calendarTimeZone })} at {new Date(calendar.cache.refreshedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: calendarTimeZone })}</p>
           )}
+          {(connection === "offline" || connection === "error") && (
+            <div className="calendar-warning" role="status">
+              <span>{connection === "offline" ? "Offline." : "Calendar connection unavailable."} Showing saved content where available. Reconnecting automatically.</span>
+              <button type="button" onClick={reloadCache}>Retry connection</button>
+            </div>
+          )}
           {calendarNotice && (
             <div className="calendar-warning" role="status">
               <span>{calendarNotice}</span>
@@ -409,7 +399,7 @@ export default function Home() {
                 <strong>Bring today into view.</strong>
                 <p>Connect Google Calendar with read-only access to see events and times here.</p>
               </div>
-              <button type="button" onClick={() => signIn("google", { redirectTo: "/" })}>
+              <button type="button" onClick={connectGoogleCalendar}>
                 Connect Google Calendar
               </button>
             </div>
@@ -439,7 +429,7 @@ export default function Home() {
           ) : !dateIsCached ? (
             <p className="calendar-message">This date is outside the saved calendar range.</p>
           ) : dayEvents.length === 0 ? (
-            <p className="calendar-message">No events scheduled for today.</p>
+            <p className="calendar-message">No events scheduled for this day.</p>
           ) : (
             <div className="event-groups">
               {allDayEvents.length > 0 && <div><p className="event-group-label">All day</p><ol className="event-list all-day-list">{allDayEvents.map((event) => <li key={event.id}><time>All day</time><div><strong>{event.title}</strong><span>{event.calendarName}{event.location ? ` · ${event.location}` : ""}</span></div></li>)}</ol></div>}
@@ -454,6 +444,7 @@ export default function Home() {
               <div><p className="eyebrow">Today</p><h2 id="tasks-heading">Small wins</h2></div>
               <span className="task-count">{tasks.filter((task) => task.done).length}/{tasks.length}</span>
             </div>
+            {storageNotice && <p className="storage-warning" role="status">{storageNotice}</p>}
             <ul className="task-list">
               {tasks.map((task) => (
                 <li key={task.id} className={task.done ? "completed" : ""}>
