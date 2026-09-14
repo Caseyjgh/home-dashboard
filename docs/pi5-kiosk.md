@@ -29,11 +29,11 @@ only to Production and Vercel Authentication enabled for generated URLs.
 1. Open Vercel → team **KC / kc-e777** → **home-dashboard** → **Settings** → **Git**.
    Confirm the connected repo is `Caseyjgh/home-dashboard`. Leave Production
    Branch as `main` (the branch control may appear under **Environments → Production**).
-2. Open **Settings → Environment Variables**. Add the existing `CLIENT_ID` and
-   `SECRET` values to **Preview**, scoped to Git branch **pi5-vercel**. Retrieve
-   these from your existing credential manager/Google Cloud configuration. The
-   sensitive `SECRET` cannot be read back through Vercel. Keep Production values
-   unchanged; do not generate new OAuth credentials.
+2. Open **Settings → Environment Variables**. The OAuth repair on 2026-09-14
+   enabled the existing `CLIENT_ID` and `SECRET` for both Production and Preview,
+   retaining the stored values. `AUTH_URL` is scoped only to Preview / `pi5-vercel`
+   and points to the stable branch alias below. No duplicate Google credentials
+   or new Google client are needed.
 3. Confirm the variables in the table below apply to the Preview deployment.
    Shared Preview variables apply automatically; overrides take precedence.
    See [Vercel's environment variable rules](https://vercel.com/docs/environment-variables).
@@ -62,10 +62,11 @@ ignored-build rules. No additional Vercel project is required.
 | Variable | Needed | Audit result / action |
 | --- | --- | --- |
 | `AUTH_SECRET` | Yes, server only | Already shared with Preview |
-| `CLIENT_ID` | Yes, server only | Add Preview / pi5-vercel scope using existing value |
-| `SECRET` | Yes, server only | Add Preview / pi5-vercel scope using existing value |
+| `CLIENT_ID` | Yes, server only | Shared with Preview after OAuth repair |
+| `SECRET` | Yes, server only | Shared with Preview after OAuth repair |
 | `KV_REST_API_URL` | Yes, server only | Already shared with Preview |
 | `KV_REST_API_TOKEN` | Yes, server only | Already shared with Preview |
+| `AUTH_URL` | Pi Preview | Stable branch origin; set only for pi5-vercel |
 | `GOOGLE_CALENDAR_TIME_ZONE` | Optional, server only | Already shared; fallback is America/Denver |
 
 `REDIS_URL`, `KV_URL`, and `KV_REST_API_READ_ONLY_TOKEN` are provisioned by the
@@ -82,7 +83,7 @@ independent data is needed; this change does not migrate or alter the database.
 
 ### Google sign-in on the branch
 
-Auth.js v5 infers the host on Vercel; no production `AUTH_URL` override is needed.
+Auth.js v5 now uses the explicit branch-scoped `AUTH_URL` for Pi callbacks; the original production environment is unchanged.
 Google must allow the actual kiosk origin's callback. In Google Cloud Console →
 **Google Auth Platform → Clients** (or **APIs & Services → Credentials**) → your
 existing Web application client → **Authorized redirect URIs**, add:

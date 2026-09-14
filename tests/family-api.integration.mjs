@@ -26,12 +26,18 @@ const store=createServer(async(req,res)=>{
 });
 store.listen(0,'127.0.0.1');await once(store,'listening');
 const base='http://127.0.0.1:3106';
+const canonicalOrigin='http://oauth.example.invalid';
 const secret='isolated-integration-test-secret-not-a-deployed-credential';
-const app=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port','3106'],{env:{...process.env,AUTH_SECRET:secret,AUTH_TRUST_HOST:'true',AUTH_URL:base,CLIENT_ID:'fixture',SECRET:'fixture',KV_REST_API_URL:`http://127.0.0.1:${store.address().port}`,KV_REST_API_TOKEN:'fixture'},stdio:['ignore','pipe','pipe']});
+const app=spawn(process.execPath,['node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port','3106'],{env:{...process.env,AUTH_SECRET:secret,AUTH_TRUST_HOST:'true',AUTH_URL:canonicalOrigin,CLIENT_ID:'fixture.apps.googleusercontent.com',SECRET:'fixture',KV_REST_API_URL:`http://127.0.0.1:${store.address().port}`,KV_REST_API_TOKEN:'fixture'},stdio:['ignore','pipe','pipe']});
 let log='';app.stdout.on('data',c=>log+=c);app.stderr.on('data',c=>log+=c);
 const cookie=async(email)=>`authjs.session-token=${await encode({token:{email},secret,salt:'authjs.session-token',maxAge:600})}`;
 try {
  for(let i=0;i<100;i++){try{await fetch(base);break;}catch{await new Promise(r=>setTimeout(r,100));}}
+ const providers=await (await fetch(`${base}/api/auth/providers`)).json();
+ assert.equal(providers.google.callbackUrl,`${canonicalOrigin}/api/auth/callback/google`);
+ const diagnostics=await (await fetch(`${base}/api/auth/config`)).json();
+ assert.equal(diagnostics.clientIdPresent,true);assert.equal(diagnostics.callbackUrl,`${canonicalOrigin}/api/auth/callback/google`);
+ assert.ok(!JSON.stringify(diagnostics).includes(secret));
  const first=await cookie('family@example.invalid'), second=await cookie('other@example.invalid');
  const get=(auth=first)=>fetch(`${base}/api/family`,{headers:{Cookie:auth}});
  const post=(revision,command,origin=base)=>fetch(`${base}/api/family`,{method:'POST',headers:{Cookie:first,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({revision,command})});

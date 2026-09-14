@@ -30,10 +30,12 @@ npm run build
 
 ## Google Calendar setup
 
+See [OAuth configuration and safe diagnostics](docs/oauth-configuration.md) for the Pi branch callback and shared credentials.
+
 Create a Google Cloud OAuth 2.0 client with the **Web application** type, enable the Google Calendar API, and add this production redirect URI:
 
 ```text
-https://home-dashboard-lumber.vercel.app/api/auth/callback/google
+https://home-dashboard-umber.vercel.app/api/auth/callback/google
 ```
 
 For local sign-in, also add:
