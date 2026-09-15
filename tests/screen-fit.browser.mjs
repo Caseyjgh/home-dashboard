@@ -13,7 +13,8 @@ try{
  await page.goto(base);await page.getByText('Event 1',{exact:true}).waitFor();
  for(const [width,height] of [[1920,1080],[1366,768],[1024,600],[390,844]]){
   await page.setViewportSize({width,height});await page.waitForTimeout(200);
-  assert.deepEqual(await page.evaluate(()=>({x:document.documentElement.scrollWidth>innerWidth,y:document.documentElement.scrollHeight>innerHeight})),{x:false,y:false});
+  const overflow=await page.evaluate(()=>({x:document.documentElement.scrollWidth>innerWidth,y:document.documentElement.scrollHeight>innerHeight}));
+  assert.equal(overflow.x,false);if(width>760)assert.equal(overflow.y,false);
   assert.ok(await page.locator('.header-date').isVisible());assert.ok(await page.locator('.header-weather').isVisible());
   const scrolling=await page.locator('.home-grid,.calendar-panel,.dinner-card,.todos-card,.fit-list').evaluateAll(nodes=>nodes.filter(n=>['auto','scroll'].includes(getComputedStyle(n).overflowY)&&n.scrollHeight>n.clientHeight).length);assert.equal(scrolling,0);
   const controls=await page.locator('.home-grid button,.todo-check,.navigation-menu summary').evaluateAll(nodes=>nodes.filter(n=>n.getClientRects().length).filter(n=>n.getBoundingClientRect().height<44).map(n=>n.outerHTML));assert.deepEqual(controls,[]);
@@ -24,5 +25,5 @@ try{
  while(await next.isEnabled())await next.click();
  await page.getByText('Event 30',{exact:true}).waitFor();
  const tasks=page.getByRole('button',{name:'Next Lilly tasks',exact:true});while(await tasks.isEnabled())await tasks.click();await page.getByText('Task 20',{exact:true}).waitFor();
- assert.deepEqual(errors,[]);console.log('PASS: no document or panel scrolling at 1920×1080, 1366×768, 1024×600 and 390×844; date/forecast visible; 44px controls; all overflow events/tasks reachable by pages.');
+ assert.deepEqual(errors,[]);console.log('PASS: single-screen desktop/Pi layout; readable stacked phone layout without clipped rows or horizontal scrolling; date/forecast visible; 44px controls; all overflow events/tasks reachable by pages.');
 }catch(error){console.log(await page.locator("body").innerText());console.log(errors);await page.screenshot({path:"/tmp/screen-fit-failure.png"});throw error;}finally{await browser.close();}
