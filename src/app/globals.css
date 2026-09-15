@@ -243,6 +243,7 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
 .calendar-column > .calendar-panel { flex:1; min-height:0; }
 .important-events { flex:none; min-width:0; }
 .important-events.empty { display:none; }
+.important-events h2 { margin:0 0 8px; color:var(--navy); font:700 14px/20px Arial,Helvetica,sans-serif; letter-spacing:.1em; text-transform:uppercase; }
 .important-events ul,.important-editor-list { list-style:none; margin:0; padding:0; }
 .important-events li { padding:8px 12px; color:var(--navy); background:var(--paper); border-bottom:1px solid var(--line); font-size:20px; line-height:28px; }
 .important-events li:first-child { border-radius:6px 6px 0 0; }
