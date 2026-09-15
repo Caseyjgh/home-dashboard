@@ -1,0 +1,1 @@
+export const weatherFixture = {location:'Windsor, Colorado',observedAt:'2026-09-15T12:00',current:{temperature:72,feelsLike:70,code:2,wind:8},days:Array.from({length:7},(_,i)=>({date:`2026-09-${15+i}`,high:78+i,low:48+i,code:i===1?63:2,precipitation:i===1?60:10}))};

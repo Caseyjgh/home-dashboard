@@ -1,3 +1,4 @@
+import { weatherFixture } from "./weather-fixture.mjs";
 // UI contract tests with a shared in-memory API fixture; live Redis/OAuth are not exercised.
 import assert from 'node:assert/strict';
 import { applyFamilyCommand, emptyFamily } from '../src/lib/family-model.ts';
@@ -18,7 +19,7 @@ async function device() {
   }
   return route.fulfill({json:{data}});
  });
- await context.route('**/api/weather', route => route.fulfill({json:{forecast:{location:'Test town',date:'2026-09-14',high:75,low:48,code:2}}}));
+ await context.route('**/api/weather', route => route.fulfill({json:{forecast: weatherFixture}}));
  const page = await context.newPage(); page.on('pageerror', e=>errors.push(e.message));
  return {context,page};
 }

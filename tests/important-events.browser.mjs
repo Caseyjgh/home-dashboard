@@ -1,3 +1,4 @@
+import { weatherFixture } from "./weather-fixture.mjs";
 import assert from 'node:assert/strict';
 import {applyFamilyCommand,emptyFamily} from '../src/lib/family-model.ts';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -10,7 +11,7 @@ await context.route('**/api/family',route=>{
  return route.fulfill({json:{data}});
 });
 await context.route('**/api/calendar',route=>route.fulfill({json:{configured:true,authenticated:true,missingVariables:[],calendarAccess:true,selectedIds:[],cache:null,account:{email:'fixture@example.invalid'}}}));
-await context.route('**/api/weather',route=>route.fulfill({json:{forecast:{location:'Test town',date:'2026-09-14',high:70,low:45,code:0}}}));
+await context.route('**/api/weather',route=>route.fulfill({json:{forecast: weatherFixture}}));
 try{
  await page.goto(base);await page.getByText('Menu',{exact:true}).click();await page.getByRole('link',{name:'Edit Important Events',exact:true}).click();
  await page.getByLabel('Start date',{exact:true}).fill('2026-10-05');await page.getByLabel('End date (optional)',{exact:true}).fill('2026-10-08');await page.getByLabel('Description',{exact:true}).fill('School closed');await page.getByLabel('High importance',{exact:true}).check();await page.getByRole('button',{name:'Save important event',exact:true}).click();await page.getByText('Important event saved.',{exact:true}).waitFor();

@@ -256,3 +256,37 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
 @media (max-width:760px) {
   .important-events li { padding:6px 8px; font-size:15px; line-height:22px; }
 }
+
+.household-column { grid-template-rows:auto minmax(100px,.35fr) minmax(0,1fr); }
+.weather-card { padding:10px 14px; min-height:0; min-width:0; border:1px solid var(--line); border-radius:8px; background:var(--paper); color:var(--navy); overflow:hidden; }
+.weather-card-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; height:28px; }
+.weather-card h2 { font:700 14px/20px Arial,Helvetica,sans-serif; letter-spacing:.08em; text-transform:uppercase; margin:0; }
+.weather-card-heading a { display:flex; align-items:center; min-height:44px; font-size:12px; }
+.weather-current { display:flex; align-items:center; gap:12px; }
+.weather-temperature { font:42px/1.1 Georgia,serif; white-space:nowrap; }
+.weather-temperature > span { font:17px Arial,Helvetica,sans-serif; }
+.weather-current p { margin:0; font-size:18px; line-height:1.35; }
+.weather-current .weather-details,.weather-extras { font-size:13px; color:var(--muted); }
+.weather-extras { margin:3px 0 6px; line-height:18px; }
+.weather-days { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); list-style:none; margin:0; padding:5px 0 0; border-top:1px solid var(--line); gap:4px; }
+.weather-days li { display:flex; flex-direction:column; align-items:center; font-size:14px; line-height:20px; }
+.weather-symbol { font-size:22px; line-height:26px; }
+.weather-unavailable { margin:14px 0; font-size:16px; }
+@media (min-width:761px) and (max-height:800px) {
+  .household-column { grid-template-rows:auto 100px minmax(0,1fr); }
+  .people-grid { grid-template-rows:1fr; grid-template-columns:1fr 1fr; gap:8px; }
+  .person-todos + .person-todos { border-top:0; border-left:1px solid var(--line); padding:0 0 0 8px; }
+  .person-todos .todo-check { font-size:16px; }
+  .home-grid .todos-card { padding:8px; }
+}
+@media (max-width:760px) {
+  .home-grid { grid-template-rows:minmax(0,.9fr) minmax(0,1.1fr); }
+  .household-column { grid-template-rows:auto 80px minmax(0,1fr); }
+  .weather-card { padding:6px 10px; }
+  .weather-temperature { font-size:32px; }
+  .weather-current p { font-size:16px; }
+  .weather-current .weather-details { font-size:12px; }
+  .weather-days li { font-size:13px; line-height:17px; }
+  .weather-symbol { font-size:20px; line-height:22px; }
+  .weather-extras { margin:2px 0; font-size:12px; }
+}

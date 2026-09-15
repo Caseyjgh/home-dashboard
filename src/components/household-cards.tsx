@@ -1,4 +1,5 @@
 "use client";
+import { WeatherCard } from "./weather-card";
 import { FitList } from "./fit-list";
 import { dateKey, PEOPLE, personTodos, safeRecipeLink } from "@/lib/family-model";
 import { useMinuteClock } from "@/hooks/use-minute-clock";
@@ -9,7 +10,8 @@ export function HouseholdCards() {
   const now = useMinuteClock();
   const dinner = data?.dinners.find((entry) => entry.date === (now ? dateKey(now) : ""));
   const content = <><h2>DINNER</h2><h3>{dinner?.title || (status === "loading" ? "Loading dinner…" : data ? "No dinner planned" : "Dinner unavailable")}</h3>{dinner?.description && <p>{dinner.description}</p>}</>;
-  return <aside className="household-column" aria-label="Dinner and to-dos">
+  return <aside className="household-column" aria-label="Weather, dinner and to-dos">
+    <WeatherCard />
     {dinner?.link && safeRecipeLink(dinner.link)
       ? <a className="dinner-card" href={dinner.link} target="_blank" rel="noopener noreferrer" aria-label={`${dinner.title} — open recipe in a new tab`}>{content}</a>
       : <section className="dinner-card">{content}</section>}

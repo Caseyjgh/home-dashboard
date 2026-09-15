@@ -1,3 +1,4 @@
+import { weatherFixture } from "./weather-fixture.mjs";
 // Optional browser checks; install Playwright separately (see docs/pi5-kiosk.md).
 import assert from "node:assert/strict";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || "playwright");
@@ -34,7 +35,7 @@ async function fixture(options = {}) {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.clock.install({ time: new Date("2026-09-13T18:00:30Z") });
   await context.route("**/api/family", route => route.fulfill({ json: { data: { version: 1, revision: 0, dinners: [], todos: [], legacyImports: [] } } }));
-  await context.route("**/api/weather", route => route.fulfill({ json: { forecast: { location: "Test town", date: "2026-09-13", high: 75, low: 48, code: 2 } } }));
+  await context.route("**/api/weather", route => route.fulfill({ json: { forecast: weatherFixture } }));
   const counts = {};
   let fail = Boolean(options.fail);
   let nextState = structuredClone(state);
