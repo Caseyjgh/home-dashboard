@@ -38,3 +38,14 @@ test('legacy import is atomic and idempotent', () => {
  assert.throws(() => apply(data, {...command, tasks:[{id:2,label:'Other',done:false}], dinner:{date:'2026-09-13',title:'Other'}}), /already exists/);
  assert.equal(data.todos.length, 1);
 });
+test('important events support ranges, highlighting, edits and deletion without changing old data', () => {
+ const old = apply(emptyFamily(), {type:'addTodo',text:'Keep me',person:'Lilly'});
+ delete old.importantEvents;
+ let data = apply(old, {type:'saveImportantEvent',startDate:'2026-10-05',endDate:'2026-10-08',description:'School closed',highImportance:true});
+ const id = data.importantEvents[0].id;
+ assert.equal(data.importantEvents[0].highImportance,true);assert.equal(data.todos[0].text,'Keep me');assert.equal(old.importantEvents,undefined);
+ assert.throws(()=>apply(data,{type:'saveImportantEvent',startDate:'2026-10-05',endDate:'2026-10-04',description:'Invalid',highImportance:false}),/end date/);
+ data=apply(data,{type:'saveImportantEvent',id,startDate:'2026-10-03',endDate:'',description:'Bring forms',highImportance:false});
+ assert.equal(data.importantEvents.length,1);assert.equal(data.importantEvents[0].description,'Bring forms');assert.equal(data.importantEvents[0].highImportance,false);
+ data=apply(data,{type:'deleteImportantEvent',id});assert.equal(data.importantEvents.length,0);assert.equal(data.todos[0].text,'Keep me');
+});

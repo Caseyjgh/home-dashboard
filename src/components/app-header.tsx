@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef } from "react";
 import { useMinuteClock } from "@/hooks/use-minute-clock";
 
-const links = [["/", "Home"], ["/dinner", "Edit Dinner"], ["/todos", "Edit To-Dos"], ["/calendar-settings", "Calendar Settings"], ["/settings", "Settings"]];
+const links = [["/", "Home"], ["/important-events", "Edit Important Events"], ["/dinner", "Edit Dinner"], ["/todos", "Edit To-Dos"], ["/calendar-settings", "Calendar Settings"], ["/settings", "Settings"]];
 export function AppHeader() {
   const now = useMinuteClock();
   const menu = useRef<HTMLDetailsElement>(null);

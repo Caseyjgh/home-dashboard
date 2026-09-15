@@ -238,3 +238,20 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
   .home-grid .calendar-connect p { display:none; }
   .home-grid .calendar-warning { font-size:12px; }
 }
+
+.calendar-column { display:flex; flex-direction:column; min-height:0; min-width:0; gap:8px; }
+.calendar-column > .calendar-panel { flex:1; min-height:0; }
+.important-events { flex:none; min-width:0; }
+.important-events.empty { display:none; }
+.important-events ul,.important-editor-list { list-style:none; margin:0; padding:0; }
+.important-events li { padding:8px 12px; color:var(--navy); background:var(--paper); border-bottom:1px solid var(--line); font-size:20px; line-height:28px; }
+.important-events li:first-child { border-radius:6px 6px 0 0; }
+.important-events li:last-child { border-radius:0 0 6px 6px; border-bottom:0; }
+.reminder-line { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; }
+.reminder-date { font-variant-numeric:tabular-nums; }
+.important-events .high-importance,.important-editor-list .high-importance { background:#fbe0df; color:#702722; font-weight:700; }
+.important-editor-list li { padding:16px; border-bottom:1px solid var(--line); }
+.important-editor-list p { white-space:pre-wrap; }
+@media (max-width:760px) {
+  .important-events li { padding:6px 8px; font-size:15px; line-height:22px; }
+}

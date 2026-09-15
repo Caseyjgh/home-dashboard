@@ -2,8 +2,11 @@ export const PEOPLE = ["Lilly", "Sawyer"] as const;
 export type Person = typeof PEOPLE[number];
 export type Dinner = { id: string; date: string; title: string; description: string; link: string };
 export type Todo = { id: string; text: string; person: Person; completed: boolean; sortOrder: number; createdAt: string };
-export type FamilyData = { version: 1; revision: number; dinners: Dinner[]; todos: Todo[]; legacyImports: string[] };
+export type ImportantEvent = { id: string; startDate: string; endDate: string; description: string; highImportance: boolean };
+export type FamilyData = { version: 1; revision: number; dinners: Dinner[]; todos: Todo[]; legacyImports: string[]; importantEvents?: ImportantEvent[] };
 export type FamilyCommand =
+  | ({ type: "saveImportantEvent" } & Omit<ImportantEvent, "id"> & { id?: string })
+  | { type: "deleteImportantEvent"; id: string }
   | ({ type: "saveDinner" } & Omit<Dinner, "id"> & { id?: string })
   | { type: "deleteDinner"; id: string }
   | { type: "addTodo"; text: string; person: Person }
@@ -63,11 +66,25 @@ function dinnerFields(value: Record<string, unknown>) {
 // All mutations run on the server. Reordering uses buttons, not a drag library.
 export function applyFamilyCommand(current: FamilyData, input: unknown, context: { id: () => string; now: string; hash: (value: string) => string }): FamilyData {
   const command = object(input);
-  const next: FamilyData = { ...current, revision: current.revision + 1, dinners: current.dinners.map((d) => ({ ...d })), todos: current.todos.map((t) => ({ ...t })), legacyImports: [...current.legacyImports] };
+  const next: FamilyData = { ...current, revision: current.revision + 1, dinners: current.dinners.map((d) => ({ ...d })), todos: current.todos.map((t) => ({ ...t })), legacyImports: [...current.legacyImports], importantEvents: (current.importantEvents ?? []).map((entry) => ({ ...entry })) };
   const addTodo = (label: string, who: Person, completed = false) => {
     next.todos.push({ id: context.id(), text: text(label, "Task", 300), person: who, completed, sortOrder: Math.max(-1, ...next.todos.filter((t) => t.person === who).map((t) => t.sortOrder)) + 1, createdAt: context.now });
   };
-  if (command.type === "saveDinner") {
+  if (command.type === "saveImportantEvent") {
+    const startDate = text(command.startDate, "Start date", 10);
+    const endDate = text(command.endDate, "End date", 10, true);
+    if (!validDate(startDate) || (endDate && (!validDate(endDate) || endDate < startDate))) throw new FamilyError("Choose valid dates; the end date cannot precede the start date.");
+    const fields = { startDate, endDate, description: text(command.description, "Description", 300), highImportance: bool(command.highImportance) };
+    const existing = next.importantEvents!.find((entry) => entry.id === command.id);
+    if (command.id !== undefined && !existing) throw new FamilyError("This important event no longer exists. Reload and try again.", 409);
+    if (existing) Object.assign(existing, fields);
+    else next.importantEvents!.push({ id: context.id(), ...fields });
+    if (next.importantEvents!.length > 1000) throw new FamilyError("Remove old important events before adding more.");
+    next.importantEvents!.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
+  } else if (command.type === "deleteImportantEvent") {
+    if (!next.importantEvents!.some((entry) => entry.id === command.id)) throw new FamilyError("This important event no longer exists.", 409);
+    next.importantEvents = next.importantEvents!.filter((entry) => entry.id !== command.id);
+  } else if (command.type === "saveDinner") {
     const fields = dinnerFields(command);
     const existing = command.id === undefined ? undefined : next.dinners.find((d) => d.id === command.id);
     if (command.id !== undefined && !existing) throw new FamilyError("This dinner no longer exists. Reload and try again.", 409);

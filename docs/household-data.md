@@ -41,3 +41,9 @@ The header is 60px high on landscape displays and 96px on narrow screens. Today'
 Set server-only `WEATHER_LOCATION` in Vercel Preview (scope `pi5-vercel`) to the intended city or postal code, then redeploy. No API key is needed. The forecast uses [Open-Meteo](https://open-meteo.com/en/docs), showing today's conditions and high/low temperatures in Fahrenheit. Geocoding is cached for a day, forecasts for 30 minutes, and the header refreshes at most every 30 minutes while visible. Existing weather stays visible with a saved marker when requests fail. No location is inferred from the Vercel server or browser timezone.
 
 `tests/screen-fit.browser.mjs` checks populated dashboards at 1920×1080, 1366×768, 1024×600 and 390×844, including paging through 30 events and 20 tasks per person.
+
+## Important events
+
+Menu → **Edit Important Events** opens `/important-events`. Each reminder has a start date, optional inclusive end date, description, and high-importance checkbox. Entries appear above the calendar, sorted by start date; high importance uses a light-red row and bold text. Entries remain until explicitly deleted. The section has no empty placeholder height and grows with visible rows. Large lists page within a portion of the available calendar column so the single-screen dashboard remains usable; the calendar fills the remaining height. Full descriptions are available in the editor.
+
+Reminders are stored as optional `importantEvents` records in the existing family Redis envelope (`id`, `startDate`, `endDate`, `description`, `highImportance`). Older records without the field read as an empty list; existing dinner/tasks and the revision/conflict checks are preserved. No migration, dependency or environment variable is required.

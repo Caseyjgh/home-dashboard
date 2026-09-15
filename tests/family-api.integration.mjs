@@ -54,5 +54,7 @@ try {
  const data=(await latest.json()).data;
  assert.equal((await post(data.revision,{type:'saveDinner',date:'2026-09-14',title:'Soup',description:'Bread',link:'https://example.org'})).status,200);
  assert.equal((await (await get()).json()).data.dinners[0].title,'Soup');
+ const reminder=await post(data.revision+1,{type:'saveImportantEvent',startDate:'2026-10-05',endDate:'2026-10-08',description:'School closed',highImportance:true});assert.equal(reminder.status,200);
+ const persisted=(await (await get()).json()).data;assert.equal(persisted.importantEvents[0].description,'School closed');assert.equal(persisted.importantEvents[0].highImportance,true);assert.equal(persisted.dinners[0].title,'Soup');
  console.log('PASS: production API authentication, account isolation, origin checks, Redis-client round trips, dinner/task persistence across requests, conflict/CAS responses, conditional reads. Redis transport and session are fixtures.');
 }finally{app.kill('SIGTERM');await once(app,'exit');store.close();}
