@@ -177,9 +177,10 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
 .calendar-events li span { display:block; color:#d4dfd4; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .household-column { grid-template-rows:minmax(0,.55fr) minmax(0,1.45fr); gap:12px; }
 .home-grid .dinner-card,.home-grid .todos-card { min-height:0; padding:16px; overflow:hidden; }
+.home-grid .dinner-card { min-height:140px; overflow:visible; }
 .dinner-card h2,.todos-card > h2 { font-size:14px; margin-bottom:8px; }
-.dinner-card h3 { font-size:26px; margin-bottom:8px; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
-.dinner-card p { font-size:19px; line-height:1.35; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; }
+.dinner-card h3 { font-size:26px; margin-bottom:4px; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+.dinner-card p { font-size:19px; line-height:1.35; display:block; overflow:visible; }
 .todos-card { display:flex; flex-direction:column; }
 .people-grid { flex:1; min-height:0; display:grid; grid-template-rows:1fr 1fr; gap:8px; }
 .person-todos { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
@@ -226,9 +227,10 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
   .calendar-events li span { font-size:13px; }
   .household-column { grid-template-rows:80px minmax(0,1fr); gap:8px; }
   .home-grid .dinner-card,.home-grid .todos-card { padding:8px; }
+  .home-grid .dinner-card { min-height:120px; }
   .dinner-card h2 { float:left; margin-right:10px; font-size:12px; }
   .dinner-card h3 { font-size:20px; margin:0 0 4px; -webkit-line-clamp:1; }
-  .dinner-card p { font-size:15px; -webkit-line-clamp:2; }
+  .dinner-card p { font-size:15px; }
   .todos-card > h2 { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
   .people-grid { grid-template-rows:1fr; grid-template-columns:1fr 1fr; gap:12px; }
   .person-todos + .person-todos { border-top:0; border-left:1px solid var(--line); padding-top:0; padding-left:12px; }
@@ -264,7 +266,7 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
   .important-events li { padding:6px 8px; font-size:15px; line-height:22px; }
 }
 
-.household-column { grid-template-rows:auto minmax(100px,.35fr) minmax(0,1fr); }
+.household-column { grid-template-rows:auto minmax(max-content,.47fr) minmax(0,1fr); }
 .weather-card { padding:10px 14px; min-height:0; min-width:0; border:1px solid var(--line); border-radius:8px; background:var(--paper); color:var(--navy); overflow:hidden; }
 .weather-card-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; height:28px; }
 .weather-card h2 { font:700 14px/20px Arial,Helvetica,sans-serif; letter-spacing:.08em; text-transform:uppercase; margin:0; }
@@ -280,7 +282,7 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
 .weather-symbol { font-size:22px; line-height:26px; }
 .weather-unavailable { margin:14px 0; font-size:16px; }
 @media (min-width:761px) and (max-height:800px) {
-  .household-column { grid-template-rows:auto 100px minmax(0,1fr); }
+  .household-column { grid-template-rows:auto minmax(140px,max-content) minmax(0,1fr); }
   .people-grid { grid-template-rows:1fr; grid-template-columns:1fr 1fr; gap:8px; }
   .person-todos + .person-todos { border-top:0; border-left:1px solid var(--line); padding:0 0 0 8px; }
   .person-todos .todo-check { font-size:16px; }
@@ -290,7 +292,7 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
   .home-grid { grid-template-rows:minmax(0,.9fr) minmax(0,1.1fr); }
   /* Reserve readable calendar space with the school banner on narrow screens. */
   .home-grid:has(.school-day-banner) { height:auto; min-height:calc(100dvh - var(--header-height)); grid-template-rows:minmax(400px,.9fr) minmax(400px,1.1fr); overflow:visible; }
-  .household-column { grid-template-rows:auto 80px minmax(0,1fr); }
+  .household-column { grid-template-rows:auto minmax(120px,max-content) minmax(0,1fr); }
   .weather-card { padding:6px 10px; }
   .weather-temperature { font-size:32px; }
   .weather-current p { font-size:16px; }
