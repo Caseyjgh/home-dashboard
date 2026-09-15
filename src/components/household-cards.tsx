@@ -1,4 +1,5 @@
 "use client";
+import { FitList } from "./fit-list";
 import { dateKey, PEOPLE, personTodos, safeRecipeLink } from "@/lib/family-model";
 import { useMinuteClock } from "@/hooks/use-minute-clock";
 import { FamilyStatus, useFamily } from "./family-provider";
@@ -14,12 +15,12 @@ export function HouseholdCards() {
       : <section className="dinner-card">{content}</section>}
     <section className="todos-card" aria-labelledby="todos-heading">
       <h2 id="todos-heading">TO-DO</h2><FamilyStatus />
-      {PEOPLE.map((person) => {
+      <div className="people-grid">{PEOPLE.map((person) => {
         const tasks = data ? personTodos(data, person).filter((task) => !task.completed) : [];
         return <section className="person-todos" key={person} aria-label={`${person} to-dos`}><h3>{person.toUpperCase()}</h3>
-          {tasks.length ? <ul>{tasks.map((task) => <li key={task.id}><label className="todo-check"><input type="checkbox" checked={false} disabled={saving || status === "offline"} onChange={() => void save({ type: "completeTodo", id: task.id, completed: true })} /><span>{task.text}</span></label></li>)}</ul> : <p className="muted">{data ? "All done." : "—"}</p>}
+          {tasks.length ? <FitList items={tasks} label={`${person} tasks`} className="task-pages" renderItem={(task) => <li key={task.id}><label className="todo-check"><input type="checkbox" checked={false} disabled={saving || status === "offline"} onChange={() => void save({ type: "completeTodo", id: task.id, completed: true })} /><span>{task.text}</span></label></li>} /> : <p className="muted">{data ? "All done." : "—"}</p>}
         </section>;
-      })}
+      })}</div>
     </section>
   </aside>;
 }

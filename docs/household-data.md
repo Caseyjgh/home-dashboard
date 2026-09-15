@@ -1,10 +1,10 @@
 # Household dashboard
 
-Home uses a 73% calendar / 27% Dinner and To-Do grid on landscape screens. Below 1050px, sections stack calendar → dinner → to-dos. Panels scroll internally when content exceeds a single screen. Controls use at least 44px button/label targets. System fonts, static CSS and existing dependencies keep the interface light.
+Home uses a 73% calendar / 27% Dinner and To-Do grid on landscape screens. Below 760px, sections stack calendar → dinner → to-dos. Home fills the available screen without document or panel scrollbars. Busy calendars and task lists use touch-friendly pages sized to the available panel height. Long event/task text uses two lines; full entries remain available through the existing calendar/editor routes. Controls use at least 44px button/label targets. System fonts, static CSS and existing dependencies keep the interface light.
 
 ## Shared storage
 
-The existing Upstash/Vercel Redis credentials are reused, server-side only. No SQL migration, new service, package or environment variable is needed. The first successful save creates `home-dashboard:family:v1:<SHA-256 of normalized Google email>` with no expiry:
+The existing Upstash/Vercel Redis credentials are reused, server-side only. No SQL migration, new storage service or package is needed for shared dinner/tasks. The optional forecast location setting is described below. The first successful save creates `home-dashboard:family:v1:<SHA-256 of normalized Google email>` with no expiry:
 
 - Dinner: `id`, `date` (YYYY-MM-DD), `title`, `description`, `link`. One entry per date; moving preserves its ID. Recipe URLs must use HTTP(S), without embedded credentials.
 - To-do: `id`, `text`, `person` (Lilly/Sawyer), `completed`, `sortOrder`, `createdAt` (server UTC timestamp).
@@ -33,3 +33,11 @@ node tests/family-api.integration.mjs
 ```
 
 The browser household suite uses a shared API fixture to exercise editing, date moves, ordering, completion, recipe popups, device/reload behavior and responsive layout. The API suite launches an isolated production server on port 3106 with a Redis REST fixture and signed test session; it tests actual route authentication, origin rejection, storage-client round trips, isolation and concurrency. Fixtures do not verify live Google OAuth or the deployed Upstash service. Confirm sign-in and saved data across two real devices after deployment, and perform an actual all-day Pi test; accelerated desktop tests cannot prove 1 GB hardware stability.
+
+## Compact date and weather header
+
+The header is 60px high on landscape displays and 96px on narrow screens. Today's date stays visible at every size; the redundant large Calendar/Today heading and refresh timestamp are removed from Home. Editor introduction headings/descriptions are hidden.
+
+Set server-only `WEATHER_LOCATION` in Vercel Preview (scope `pi5-vercel`) to the intended city or postal code, then redeploy. No API key is needed. The forecast uses [Open-Meteo](https://open-meteo.com/en/docs), showing today's conditions and high/low temperatures in Fahrenheit. Geocoding is cached for a day, forecasts for 30 minutes, and the header refreshes at most every 30 minutes while visible. Existing weather stays visible with a saved marker when requests fail. No location is inferred from the Vercel server or browser timezone.
+
+`tests/screen-fit.browser.mjs` checks populated dashboards at 1920×1080, 1366×768, 1024×600 and 390×844, including paging through 30 events and 20 tasks per person.

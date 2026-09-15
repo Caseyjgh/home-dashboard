@@ -8,7 +8,7 @@ let data = emptyFamily(), id = 0;
 const errors = [];
 async function device() {
  const context = await browser.newContext({viewport:{width:1920,height:1080},timezoneId:'America/Denver'});
- await context.route('**/api/calendar**', route => route.fulfill({json:{configured:true,authenticated:true,calendarAccess:true,selectedIds:[],cache:null,account:{email:'test@example.invalid'}}}));
+ await context.route('**/api/calendar**', route => route.fulfill({json:{configured:true,authenticated:true,missingVariables:[],calendarAccess:true,selectedIds:[],cache:null,account:{email:'test@example.invalid'}}}));
  await context.route('**/api/family', route => {
   if (route.request().method() === 'POST') {
    const body = route.request().postDataJSON();
@@ -18,6 +18,7 @@ async function device() {
   }
   return route.fulfill({json:{data}});
  });
+ await context.route('**/api/weather', route => route.fulfill({json:{forecast:{location:'Test town',date:'2026-09-14',high:75,low:48,code:2}}}));
  const page = await context.newPage(); page.on('pageerror', e=>errors.push(e.message));
  return {context,page};
 }
@@ -44,7 +45,7 @@ try {
  for (const [width,height] of [[1920,1080],[1366,768],[390,844]]) {
   await page.setViewportSize({width,height});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-  if(width===1920) assert.equal(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight),false);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight),false);
  }
  await page.setViewportSize({width:1920,height:1080});
  await page.goto(`${base}/todos`);
@@ -65,7 +66,7 @@ try {
  await page.goto(`${base}/dinner`); await page.getByLabel('Title',{exact:true}).fill('Updated dinner'); await page.getByLabel('Date',{exact:true}).fill('2026-10-01'); await page.getByRole('button',{name:'Save dinner',exact:true}).click(); await page.getByText('Dinner saved.',{exact:true}).waitFor();
  assert.equal(data.dinners.length,1); assert.equal(data.dinners[0].date,'2026-10-01');
  await page.getByRole('button',{name:'Delete dinner',exact:true}).click(); await page.getByRole('button',{name:'Confirm delete dinner',exact:true}).click(); await page.getByText('Dinner deleted.',{exact:true}).waitFor(); assert.equal(data.dinners.length,0);
- await page.goto(`${base}/settings`); await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
+ await page.goto(`${base}/settings`); await page.getByRole('heading',{name:'Settings',exact:true,includeHidden:true}).waitFor({state:'attached'});
  await page.getByText('Menu',{exact:true}).click();
  for(const title of ['Home','Edit Dinner','Edit To-Dos','Calendar Settings','Settings']) assert.ok(await page.getByRole('navigation').getByRole('link',{name:title,exact:true}).isVisible());
  assert.deepEqual(errors,[]);

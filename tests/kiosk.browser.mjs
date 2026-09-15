@@ -34,6 +34,7 @@ async function fixture(options = {}) {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.clock.install({ time: new Date("2026-09-13T18:00:30Z") });
   await context.route("**/api/family", route => route.fulfill({ json: { data: { version: 1, revision: 0, dinners: [], todos: [], legacyImports: [] } } }));
+  await context.route("**/api/weather", route => route.fulfill({ json: { forecast: { location: "Test town", date: "2026-09-13", high: 75, low: 48, code: 2 } } }));
   const counts = {};
   let fail = Boolean(options.fail);
   let nextState = structuredClone(state);
@@ -61,10 +62,11 @@ try {
   const reads = f.counts["/api/calendar"];
   await f.page.getByRole("button", { name: "Today", exact: true }).click();
   assert.equal(f.counts["/api/calendar"], reads);
-  await f.page.getByRole("button", { name: "Calendars", exact: true }).click();
+  await f.page.goto(`${base}/calendar-settings`);
   await f.page.getByRole("checkbox", { name: "Family" }).waitFor();
   await f.page.getByRole("button", { name: "Save calendars" }).click();
   await f.page.getByText("Calendar selection saved.", { exact: false }).waitFor();
+  await f.page.goto(base);
   await f.page.getByRole("button", { name: "Refresh Calendar", exact: true }).click();
   await f.page.getByRole("button", { name: "Refresh Calendar", exact: true }).waitFor();
   await f.page.getByRole("button", { name: "Refresh Calendar", exact: true }).click();

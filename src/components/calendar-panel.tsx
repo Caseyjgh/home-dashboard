@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { FitList } from "./fit-list";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMinuteClock } from "@/hooks/use-minute-clock";
 import { useCachedCalendar } from "@/hooks/use-cached-calendar";
@@ -262,12 +264,12 @@ export function CalendarPanel({ settingsOnly = false }: { settingsOnly?: boolean
         <section className="calendar-panel" aria-labelledby="calendar-heading">
           <div className="section-heading calendar-heading">
             <div>
-              <p className="eyebrow light">Calendar</p>
-              <h2 id="calendar-heading">{settingsOnly ? "Calendar settings" : selectedDate === todayKey ? "Today" : displayDate(selectedDate)}</h2>
+
+              <h2 id="calendar-heading" className={settingsOnly ? "" : "sr-only"}>{settingsOnly ? "Calendar settings" : selectedDate === todayKey ? "Today" : displayDate(selectedDate)}</h2>
             </div>
             {calendar.authenticated && (
               <div className="calendar-actions">
-                <button onClick={openCalendarSettings}>Calendars</button>
+                {settingsOnly ? <button onClick={openCalendarSettings}>Calendars</button> : <Link href="/calendar-settings" prefetch={false}>Calendars</Link>}
                 <button className="refresh-button" onClick={refreshCalendar} disabled={refreshingCalendar}>
                   {refreshingCalendar ? "Refreshing…" : "Refresh Calendar"}
                 </button>
@@ -276,10 +278,10 @@ export function CalendarPanel({ settingsOnly = false }: { settingsOnly?: boolean
           </div>
           <div className="date-navigation">
             <button onClick={() => setSelectedDate((date) => moveDate(date, -1))} disabled={!selectedDate} aria-label="Previous day">←</button>
-            <button onClick={() => setSelectedDate(localDateKey(new Date()))}>Today</button>
+            <button aria-label="Today" onClick={() => setSelectedDate(localDateKey(new Date()))}>{selectedDate === todayKey ? "Today" : displayDate(selectedDate)}</button>
             <button onClick={() => setSelectedDate((date) => moveDate(date, 1))} disabled={!selectedDate} aria-label="Next day">→</button>
           </div>
-          {calendar.cache && (
+          {settingsOnly && calendar.cache && (
             <p className="last-refreshed">Last refreshed: {new Date(calendar.cache.refreshedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: calendarTimeZone })} at {new Date(calendar.cache.refreshedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: calendarTimeZone })}</p>
           )}
           {(connection === "offline" || connection === "error") && (
@@ -349,10 +351,7 @@ export function CalendarPanel({ settingsOnly = false }: { settingsOnly?: boolean
           ) : dayEvents.length === 0 ? (
             <p className="calendar-message">No events scheduled for this day.</p>
           ) : (
-            <div className="event-groups">
-              {allDayEvents.length > 0 && <div><p className="event-group-label">All day</p><ol className="event-list all-day-list">{allDayEvents.map((event) => <li key={event.id}><time>All day</time><div><strong>{event.title}</strong><span>{event.calendarName}{event.location ? ` · ${event.location}` : ""}</span></div></li>)}</ol></div>}
-              {timedEvents.length > 0 && <div><p className="event-group-label">Schedule</p><ol className="event-list">{timedEvents.map((event) => <li key={event.id}><time>{eventTime(event, calendarTimeZone)}</time><div><strong>{event.title}</strong><span>{event.calendarName}{event.location ? ` · ${event.location}` : ""}</span></div></li>)}</ol></div>}
-            </div>
+            <FitList key={selectedDate} items={[...allDayEvents, ...timedEvents]} label="calendar events" className="calendar-events" renderItem={(event) => <li key={event.id}><time>{eventTime(event, calendarTimeZone)}</time><div><strong title={event.title}>{event.title}</strong><span>{event.calendarName}{event.location ? ` · ${event.location}` : ""}</span></div></li>} />
           )}
         </section>
 
