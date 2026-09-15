@@ -1,14 +1,14 @@
 # Home Dashboard
 
-A calm personal start page built with Next.js, TypeScript, and Tailwind CSS. It includes:
+A lightweight household display for Raspberry Pi 5, desktop, and mobile. Home uses a large daily calendar beside Dinner and Lilly/Sawyer to-dos. Meals and tasks are stored in the existing Redis database, shared by devices signed into the same Google account.
 
-- A live local clock and date
-- Cached events from selected private Google calendars using read-only OAuth access
-- Date navigation, manual refresh, and a server-enforced five-minute refresh cooldown
-- Quick links for Gmail, Google Calendar, Spotify, and GitHub
-- A task list stored privately in the browser
-- An editable daily recipe plan for breakfast, lunch, and dinner
-- Responsive styling for desktop and mobile
+- `/`: cached calendar, today's dinner, incomplete tasks
+- `/dinner`: dinner editing, date changes and deletion
+- `/todos`: task editing, completion, reassignment and ordering
+- `/calendar-settings`: existing Google calendar selection
+- `/settings`: account controls and explicit import of older browser-local entries
+
+See [household storage and operation](docs/household-data.md).
 
 ## Local development
 
@@ -24,15 +24,18 @@ Open [http://localhost:3000](http://localhost:3000).
 ```bash
 npm run lint
 npm run typecheck
+npm test
 npm run build
 ```
 
 ## Google Calendar setup
 
+See [OAuth configuration and safe diagnostics](docs/oauth-configuration.md) for the Pi branch callback and shared credentials.
+
 Create a Google Cloud OAuth 2.0 client with the **Web application** type, enable the Google Calendar API, and add this production redirect URI:
 
 ```text
-https://home-dashboard-lumber.vercel.app/api/auth/callback/google
+https://home-dashboard-umber.vercel.app/api/auth/callback/google
 ```
 
 For local sign-in, also add:
@@ -48,3 +51,10 @@ Calendar events, selected-calendar preferences, user timezone, last successful r
 ## Deployment
 
 The application uses the Next.js App Router and can be deployed directly to Vercel. Every push to the connected `main` branch can trigger a production deployment through the existing Vercel integration.
+
+## Raspberry Pi branch
+
+`pi5-vercel` is the dedicated Pi 5 / 1 GB Chromium kiosk target, based on `pi5`.
+It uses Vercel Preview deployments; `main` remains production. See
+[Pi kiosk and Vercel setup](docs/pi5-kiosk.md) and the
+[performance audit](docs/pi5-audit.md) before deploying a device.
