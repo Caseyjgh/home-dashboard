@@ -1,6 +1,6 @@
 # Household dashboard
 
-Home uses a 73% calendar / 27% Dinner and To-Do grid on landscape screens. Below 760px, sections stack calendar → dinner → to-dos. Home fills the available screen without document or panel scrollbars. Busy calendars and task lists use touch-friendly pages sized to the available panel height. Long event/task text uses two lines; full entries remain available through the existing calendar/editor routes. Controls use at least 44px button/label targets. System fonts, static CSS and existing dependencies keep the interface light.
+Home uses a 65.5% calendar / 34.5% Weather, Dinner and To-Do grid on landscape screens. Below 760px, sections stack calendar → dinner → to-dos. Home fills the available screen without document or panel scrollbars. Busy calendars and task lists use touch-friendly pages sized to the available panel height. Long event/task text uses two lines; full entries remain available through the existing calendar/editor routes. Controls use at least 44px button/label targets. System fonts, static CSS and existing dependencies keep the interface light.
 
 ## Shared storage
 

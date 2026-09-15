@@ -42,7 +42,7 @@ try {
  await context.route('https://example.org/recipe',route=>route.fulfill({body:'Recipe'}));
  const popupPromise=page.waitForEvent('popup'); await card.click(); const popup=await popupPromise; await popup.waitForLoadState(); assert.equal(popup.url(),'https://example.org/recipe'); await popup.close();
  const widths=await page.evaluate(()=>[document.querySelector('.calendar-panel').getBoundingClientRect().width,document.querySelector('.household-column').getBoundingClientRect().width]);
- assert.ok(widths[0]/(widths[0]+widths[1])>=.70 && widths[0]/(widths[0]+widths[1])<=.75);
+ assert.ok(widths[0]/(widths[0]+widths[1])>=.65 && widths[0]/(widths[0]+widths[1])<=.66);
  for (const [width,height] of [[1920,1080],[1366,768],[390,844]]) {
   await page.setViewportSize({width,height});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
