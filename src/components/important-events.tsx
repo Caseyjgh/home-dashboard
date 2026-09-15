@@ -14,7 +14,7 @@ export function ImportantEvents() {
   useEffect(() => {
     const parent = anchor.current?.parentElement;
     if (!parent) return;
-    const observer = new ResizeObserver(() => setLimit(Math.max(1, Math.floor((parent.clientHeight * .4 - 72) / 72))));
+    const observer = new ResizeObserver(() => setLimit(Math.min(4, Math.max(1, Math.floor((parent.clientHeight * .4 - 72) / 72)))));
     observer.observe(parent);
     return () => observer.disconnect();
   }, []);

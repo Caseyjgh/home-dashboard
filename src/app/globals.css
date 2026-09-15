@@ -241,8 +241,8 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
 
 .calendar-column { display:flex; flex-direction:column; min-height:0; min-width:0; gap:8px; }
 .calendar-column > .calendar-panel { flex:1; min-height:0; }
-.school-day-banner { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); height:80px; flex:none; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#e7e7e7; }
-.school-day-half { display:grid; place-items:center; color:#000; font-size:clamp(18px,2.4vw,36px); font-weight:700; line-height:1.1; text-align:center; }
+.school-day-banner { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); height:40px; flex:none; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#e7e7e7; }
+.school-day-half { display:grid; place-items:center; color:#000; font-size:clamp(18px,2.4vw,30px); font-weight:700; line-height:1.1; text-align:center; }
 .school-day-half + .school-day-half { border-left:1px solid rgb(0 0 0 / 16%); }
 .school-day-blue { background:#0B2D4D; color:#fff; }
 .school-day-green { background:#4CBB17; }

@@ -26,5 +26,12 @@ try{
  await page.getByRole('button',{name:'Next important reminders',exact:true}).click();await page.getByText('Bring permission slip',{exact:false}).waitFor();
  await page.goto(`${base}/important-events`);await page.getByRole('button',{name:'Edit School closed',exact:true}).click();await page.getByLabel('Description',{exact:true}).fill('School open');await page.getByLabel('High importance',{exact:true}).uncheck();await page.getByRole('button',{name:'Save important event',exact:true}).click();await page.getByText('Important event saved.',{exact:true}).waitFor();
  await page.reload();await page.getByRole('button',{name:'Delete School open',exact:true}).click();await page.getByRole('button',{name:'Confirm delete important event',exact:true}).click();await page.getByRole('button',{name:'Edit School open',exact:true}).waitFor({state:'detached'});assert.equal(data.importantEvents.length,1);
- assert.deepEqual(errors,[]);console.log('PASS: reminder CRUD/reload, dates/ranges, red bold importance, dynamic height, calendar placement, menu and mobile paging. Shared API fixture.');
+ data.importantEvents=Array.from({length:9},(_,i)=>({id:`page-${i}`,startDate:'2026-10-05',endDate:'',description:`Paged reminder ${i+1}`,highImportance:false}));
+ await page.setViewportSize({width:1920,height:2160});await page.goto(base);
+ await page.waitForFunction(()=>document.querySelectorAll('.important-events li').length===4);
+ const next=page.getByRole('button',{name:'Next important reminders',exact:true});
+ await next.click();await page.getByText('Paged reminder 5',{exact:false}).waitFor();assert.equal(await page.locator('.important-events li').count(),4);
+ await next.click();await page.getByText('Paged reminder 9',{exact:false}).waitFor();assert.equal(await page.locator('.important-events li').count(),1);assert.equal(await next.isEnabled(),false);
+ await page.getByRole('button',{name:'Previous important reminders',exact:true}).click();await page.getByText('Paged reminder 5',{exact:false}).waitFor();
+ assert.deepEqual(errors,[]);console.log('PASS: reminder CRUD/reload, dates/ranges, red bold importance, dynamic height, calendar placement, menu, mobile paging, and four-entry maximum with next/previous pages. Shared API fixture.');
 }finally{await browser.close();}

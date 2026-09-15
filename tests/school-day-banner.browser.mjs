@@ -18,7 +18,7 @@ try {
   await page.setViewportSize({width,height});
   const banner=await page.locator('.school-day-banner').boundingBox();
   const events=await page.locator('.important-events').boundingBox();
-  assert.equal(banner.x,events.x);assert.equal(banner.width,events.width);assert.equal(banner.height,80);assert.equal(events.y,banner.y+banner.height+8);
+  assert.equal(banner.x,events.x);assert.equal(banner.width,events.width);assert.equal(banner.height,40);assert.equal(events.y,banner.y+banner.height+8);
   const halves=await page.locator('.school-day-half').evaluateAll(ns=>ns.map(n=>n.getBoundingClientRect().width));assert.ok(Math.abs(halves[0]-halves[1])<1);
  }
  await page.clock.runFor(120_000);
