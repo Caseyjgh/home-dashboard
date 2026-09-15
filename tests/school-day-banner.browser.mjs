@@ -12,7 +12,7 @@ try {
  await page.goto(process.env.KIOSK_TEST_URL||'http://127.0.0.1:3105');
  await page.getByText('BLUE DAY',{exact:true}).waitFor();
  assert.deepEqual(await page.locator('.school-day-half').allTextContents(),['BLUE DAY','MAROON DAY']);
- assert.deepEqual(await page.locator('.school-day-half').evaluateAll(nodes=>nodes.map(n=>[getComputedStyle(n).backgroundColor,getComputedStyle(n).color])),[['rgb(11, 45, 77)','rgb(0, 0, 0)'],['rgb(128, 0, 32)','rgb(0, 0, 0)']]);
+ assert.deepEqual(await page.locator('.school-day-half').evaluateAll(nodes=>nodes.map(n=>[getComputedStyle(n).backgroundColor,getComputedStyle(n).color])),[['rgb(11, 45, 77)','rgb(255, 255, 255)'],['rgb(128, 0, 32)','rgb(255, 255, 255)']]);
  await page.getByText('Reminder',{exact:false}).waitFor();
  for(const [width,height] of [[1920,1080],[1366,768],[390,844]]) {
   await page.setViewportSize({width,height});
@@ -27,5 +27,5 @@ try {
  await page.clock.runFor(120_000);
  assert.equal((await page.locator('.school-day-half').allTextContents())[1],'—');
  assert.deepEqual(errors,[]);
- console.log('PASS: correct static statuses, black text/colors, equal halves, placement, Denver midnight rollover in UTC browser, and neutral special date.');
+ console.log('PASS: correct static statuses, white text on navy/maroon, equal halves, placement, Denver midnight rollover in UTC browser, and neutral special date.');
 } finally {await browser.close();}
