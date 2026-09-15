@@ -23,11 +23,11 @@ try{
  await page.goto(base);await page.waitForFunction(()=>document.querySelectorAll('.important-events li').length===2);assert.ok((await page.locator('.important-events').boundingBox()).height>one.height);
  await page.screenshot({path:'/tmp/important-reminders-desktop.png'});
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(200);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
- await page.getByRole('button',{name:'Next important reminders',exact:true}).click();await page.getByText('Bring permission slip',{exact:false}).waitFor();
+ assert.equal(await page.locator('.important-events li').count(),2);assert.equal(await page.getByRole('button',{name:'Next important reminders',exact:true}).count(),0);await page.getByText('Bring permission slip',{exact:false}).waitFor();
  await page.goto(`${base}/important-events`);await page.getByRole('button',{name:'Edit School closed',exact:true}).click();await page.getByLabel('Description',{exact:true}).fill('School open');await page.getByLabel('High importance',{exact:true}).uncheck();await page.getByRole('button',{name:'Save important event',exact:true}).click();await page.getByText('Important event saved.',{exact:true}).waitFor();
  await page.reload();await page.getByRole('button',{name:'Delete School open',exact:true}).click();await page.getByRole('button',{name:'Confirm delete important event',exact:true}).click();await page.getByRole('button',{name:'Edit School open',exact:true}).waitFor({state:'detached'});assert.equal(data.importantEvents.length,1);
  data.importantEvents=Array.from({length:9},(_,i)=>({id:`page-${i}`,startDate:'2026-10-05',endDate:'',description:`Paged reminder ${i+1}`,highImportance:false}));
- await page.setViewportSize({width:1920,height:2160});await page.goto(base);
+ await page.setViewportSize({width:1366,height:768});await page.goto(base);
  await page.waitForFunction(()=>document.querySelectorAll('.important-events li').length===4);
  const next=page.getByRole('button',{name:'Next important reminders',exact:true});
  await next.click();await page.getByText('Paged reminder 5',{exact:false}).waitFor();assert.equal(await page.locator('.important-events li').count(),4);

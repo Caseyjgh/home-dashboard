@@ -154,7 +154,7 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
 .header-weather strong { white-space:nowrap; font-weight:600; }
 .home-grid { height:calc(100dvh - var(--header-height)); grid-template-columns:minmax(0,65.5fr) minmax(0,34.5fr); padding:12px; gap:12px; overflow:hidden; }
 .home-grid .calendar-panel { display:flex; flex-direction:column; padding:16px; min-height:0; overflow:hidden; position:relative; }
-.home-grid .calendar-heading { min-height:44px; margin:0 0 8px; justify-content:flex-end; flex-wrap:nowrap; padding-left:220px; }
+.home-grid .calendar-heading { min-height:32px; margin:0 0 4px; justify-content:flex-end; flex-wrap:nowrap; padding-left:190px; }
 .home-grid .date-navigation { position:absolute; top:16px; left:16px; gap:4px; margin:0; }
 .home-grid .date-navigation button { font-size:17px; padding:8px; }
 .home-grid .date-navigation button:nth-child(2) { max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -243,6 +243,9 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
 
 .calendar-column { display:flex; flex-direction:column; min-height:0; min-width:0; gap:8px; }
 .calendar-column > .calendar-panel { flex:1; min-height:0; }
+.home-grid .calendar-actions { gap:4px; flex-wrap:nowrap; }
+.home-grid .calendar-actions a,.home-grid .calendar-actions button,.home-grid .date-navigation button { min-height:32px; padding:4px 8px; font-size:14px; line-height:22px; }
+.home-grid .date-navigation button { min-width:32px; }
 .school-day-banner { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); height:40px; flex:none; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#e7e7e7; }
 .school-day-half { display:grid; place-items:center; color:#000; font-size:clamp(18px,2.4vw,30px); font-weight:700; line-height:1.1; text-align:center; }
 .school-day-half + .school-day-half { border-left:1px solid rgb(0 0 0 / 16%); }
@@ -291,7 +294,7 @@ a.dinner-card:hover { outline:2px solid var(--gold); outline-offset:-2px; }
 @media (max-width:760px) {
   .home-grid { grid-template-rows:minmax(0,.9fr) minmax(0,1.1fr); }
   /* Reserve readable calendar space with the school banner on narrow screens. */
-  .home-grid:has(.school-day-banner) { height:auto; min-height:calc(100dvh - var(--header-height)); grid-template-rows:minmax(400px,.9fr) minmax(400px,1.1fr); overflow:visible; }
+  .home-grid:has(.school-day-banner) { height:auto; min-height:calc(100dvh - var(--header-height)); grid-template-rows:minmax(440px,.9fr) minmax(400px,1.1fr); overflow:visible; }
   .household-column { grid-template-rows:auto minmax(120px,max-content) minmax(0,1fr); }
   .weather-card { padding:6px 10px; }
   .weather-temperature { font-size:32px; }
