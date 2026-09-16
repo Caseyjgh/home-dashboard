@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { scheduledThemeScript } from "@/lib/scheduled-theme";
 import "./globals.css";
 import { WeatherProvider } from "@/components/weather-provider";
 import { AppHeader } from "@/components/app-header";
@@ -11,7 +12,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <head><script id="scheduled-theme" dangerouslySetInnerHTML={{ __html: scheduledThemeScript }} /></head>
       <body><WeatherProvider><AppHeader /><FamilyProvider>{children}</FamilyProvider></WeatherProvider></body>
     </html>
   );

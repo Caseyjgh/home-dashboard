@@ -2,7 +2,7 @@
 .mobile-app { min-height:100dvh; color:var(--ink); font-size:16px; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
 .mobile-app * { min-width:0; }
 .mobile-header { max-width:680px; margin:auto; padding:calc(12px + env(safe-area-inset-top,0px)) 16px 8px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.mobile-header > a { display:flex; align-items:center; min-height:44px; color:var(--navy); font-weight:700; font-size:24px; text-decoration:none; }
+.mobile-header > a { display:flex; align-items:center; min-height:44px; color:var(--heading); font-weight:700; font-size:24px; text-decoration:none; }
 .mobile-header .mobile-pi-link { font-size:14px; font-weight:400; text-decoration:underline; }
 .mobile-content { max-width:680px; margin:auto; padding:0 16px 24px; }
 .mobile-app h1 { margin:12px 0 20px; font:700 28px/1.2 Arial,Helvetica,sans-serif; }
@@ -16,24 +16,24 @@
 .mobile-app a,.mobile-app button { -webkit-tap-highlight-color:transparent; }
 .mobile-app :focus-visible { outline:3px solid var(--gold); outline-offset:3px; }
 .mobile-bottom-nav { position:fixed; z-index:30; bottom:0; left:0; right:0; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); padding:8px max(8px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px)); border-top:1px solid var(--line); background:var(--paper); }
-.mobile-bottom-nav a { display:flex; align-items:center; justify-content:center; min-height:48px; border-radius:6px; color:var(--navy); text-decoration:none; font-size:13px; font-weight:700; }
-.mobile-bottom-nav a[aria-current="page"] { background:var(--navy); color:var(--paper); }
-.mobile-back { display:inline-flex; align-items:center; color:var(--navy); margin:0 0 8px; }
+.mobile-bottom-nav a { display:flex; align-items:center; justify-content:center; min-height:48px; border-radius:6px; color:var(--heading); text-decoration:none; font-size:13px; font-weight:700; }
+.mobile-bottom-nav a[aria-current="page"] { background:var(--navy); color:var(--on-dark); }
+.mobile-back { display:inline-flex; align-items:center; color:var(--heading); margin:0 0 8px; }
 .mobile-card,.mobile-app .editor-card { padding:16px; border:1px solid var(--line); border-radius:8px; background:var(--paper); margin:0 0 16px; overflow-wrap:anywhere; }
 .mobile-card-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }
 .mobile-card-heading h2 { margin:0; }
 .mobile-card-heading a { display:flex; align-items:center; justify-content:center; min-width:60px; min-height:44px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; color:inherit; }
-.mobile-action { display:flex; align-items:center; justify-content:center; width:100%; color:var(--navy); border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin-top:12px; font-weight:700; text-decoration:none; }
+.mobile-action { display:flex; align-items:center; justify-content:center; width:100%; color:var(--heading); border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin-top:12px; font-weight:700; text-decoration:none; }
 .mobile-app .school-day-banner { height:80px; margin-bottom:16px; }
 .mobile-app .school-day-half { display:flex; flex-direction:column; justify-content:center; gap:6px; font-size:20px; }
 .mobile-app .school-day-half small { font-size:12px; letter-spacing:.12em; }
 .mobile-weather-current { display:flex; align-items:center; gap:16px; margin-bottom:8px; }
 .mobile-weather-current strong { font-size:36px; line-height:1.2; }
-.mobile-dinner { background:var(--navy); color:var(--paper); }
+.mobile-dinner { background:var(--navy); color:var(--on-dark); }
 .mobile-dinner h2 { color:var(--gold); }
 .mobile-dinner h3 { font:26px/1.2 Georgia,serif; margin-bottom:6px; }
 .mobile-dinner p { white-space:pre-wrap; }
-.mobile-dinner a { color:var(--paper); border-color:#fbf7ef55; }
+.mobile-dinner a { color:var(--on-dark); border-color:#fbf7ef55; }
 .mobile-person + .mobile-person { border-top:1px solid var(--line); padding-top:16px; margin-top:16px; }
 .mobile-person ul,.mobile-reminders { list-style:none; padding:0; margin:0; }
 .mobile-app .todo-check { font-size:17px; align-items:center; overflow-wrap:anywhere; }
@@ -78,7 +78,7 @@
 .dinner-days ul { list-style:none; padding:0; margin:0; }
 .dinner-days li + li { margin-top:8px; }
 .dinner-days li button { width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:left; padding:12px; }
-.dinner-days li button[aria-pressed="true"] { border-color:var(--green); background:#e7eee4; }
+.dinner-days li button[aria-pressed="true"] { border-color:var(--accent); background:#e7eee4; }
 .dinner-days li button > span:first-child { flex:1; }
 .dinner-days li strong,.dinner-days li button > span:first-child > span { display:block; overflow-wrap:anywhere; }
 .dinner-day-action { flex:none; font-size:14px; font-weight:700; }
