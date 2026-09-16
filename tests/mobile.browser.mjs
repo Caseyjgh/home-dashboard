@@ -46,6 +46,18 @@ try {
   }
   await page.goto(`${base}/mobile`);await page.getByText('Pasta night',{exact:true}).waitFor();await page.screenshot({path:`/tmp/mobile-home-${width}.png`,fullPage:true});
  }
+ await page.getByRole('navigation',{name:'Mobile navigation'}).getByRole('link',{name:'Dinner',exact:true}).click();
+ await page.getByRole('heading',{name:'Dinner planner',exact:true}).waitFor();
+ await page.getByRole('button',{name:'Add dinner for 2026-09-16',exact:true}).click();
+ assert.equal(await page.getByLabel('Title',{exact:true}).inputValue(),'');
+ await page.getByLabel('Title',{exact:true}).fill('Salmon');await page.getByRole('button',{name:'Save dinner',exact:true}).click();await page.getByText('Dinner saved.',{exact:true}).waitFor();
+ assert.equal(data.dinners.length,2);assert.equal(data.dinners.find(d=>d.date==='2026-09-15').title,'Pasta night');
+ await page.getByLabel('Move dinner to',{exact:true}).fill('2026-09-17');await page.getByRole('button',{name:'Save dinner',exact:true}).click();await page.getByText('Dinner saved.',{exact:true}).waitFor();
+ assert.equal(data.dinners.find(d=>d.title==='Salmon').date,'2026-09-17');
+ await page.reload();await page.getByRole('button',{name:'Edit dinner for 2026-09-17',exact:true}).click();assert.equal(await page.getByLabel('Title',{exact:true}).inputValue(),'Salmon');
+ await page.getByRole('button',{name:'Delete dinner',exact:true}).click();await page.getByRole('button',{name:'Confirm delete dinner',exact:true}).click();await page.getByText('Dinner deleted.',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Next dinner week',exact:true}).click();await page.getByRole('button',{name:'Add dinner for 2026-09-22',exact:true}).click();assert.equal(await page.getByLabel('Date',{exact:true}).inputValue(),'2026-09-22');
+ await page.getByRole('button',{name:'Previous dinner week',exact:true}).click();await page.getByRole('button',{name:'Edit dinner for 2026-09-15',exact:true}).click();
  await page.goto(`${base}/mobile/meals`);await page.getByLabel('Title',{exact:true}).fill('Chicken Tacos');await page.getByLabel('Description',{exact:true}).fill('Corn tortillas, salsa, and avocado.');await page.getByLabel('Recipe Link',{exact:true}).fill('https://example.org/tacos');await page.getByRole('button',{name:'Save dinner',exact:true}).click();await page.getByText('Dinner saved.',{exact:true}).waitFor();
  const piCounts={...pi.counts};await pi.page.clock.runFor(31_000);await pi.page.getByText('Chicken Tacos',{exact:true}).waitFor();assert.equal(pi.counts.weather,piCounts.weather);assert.equal(pi.counts.calendar,piCounts.calendar);assert.equal(pi.counts.family,piCounts.family+1);
  await page.reload();await page.waitForFunction(()=>document.querySelector('input[maxlength="200"]').value==='Chicken Tacos');

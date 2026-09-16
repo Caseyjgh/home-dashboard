@@ -3,9 +3,10 @@ import { useState, type FormEvent } from "react";
 import { useMinuteClock } from "@/hooks/use-minute-clock";
 import { dateKey, type Dinner } from "@/lib/family-model";
 import { FamilyStatus, useFamily } from "./family-provider";
+import { DinnerDays } from "./mobile/dinner-days";
 
 type Draft = Omit<Dinner, "id"> & { id?: string; revision?: number };
-export function DinnerEditor() {
+export function DinnerEditor({ mobile = false }: { mobile?: boolean }) {
   const { data, saving, save, status } = useFamily();
   const now = useMinuteClock();
   const [selectedDate, setSelectedDate] = useState("");
@@ -28,12 +29,14 @@ export function DinnerEditor() {
       setSelectedDate(date); setDraft(null); setConfirmDelete(false); setNotice("Dinner saved.");
     } else setDraft((current) => current ? { ...current, revision: undefined } : current);
   }
-  return <main className="editor-page"><h1>Edit Dinner</h1><p className="page-description">Plan dinner for a date. Change the Date field to move an existing dinner.</p><FamilyStatus />
+  return <main className="editor-page"><h1>{mobile ? "Dinner planner" : "Edit Dinner"}</h1><p className="page-description">{mobile ? "Choose a day to add dinner or edit what’s planned." : "Plan dinner for a date. Change the Date field to move an existing dinner."}</p><FamilyStatus />
+    {mobile && <DinnerDays today={now ? dateKey(now) : ""} selected={chosenDate} dinners={data?.dinners ?? []} choose={choose} />}
     <div className="editor-toolbar"><label>Choose dinner date<input type="date" value={chosenDate} onChange={(event) => choose(event.target.value)} /></label>
       <label>Saved dinners<select value={entry?.date || ""} onChange={(event) => { if (event.target.value) choose(event.target.value); }}><option value="">Choose an entry</option>{data?.dinners.map((d) => <option key={d.id} value={d.date}>{d.date} — {d.title}</option>)}</select></label>
     </div>
-    <form className="editor-card dinner-form" onSubmit={submit}>
-      <fieldset disabled={disabled}><label>Date<input type="date" required value={form.date} onChange={(event) => edit("date", event.target.value)} /></label>
+    <form id={mobile ? "mobile-dinner-form" : undefined} className="editor-card dinner-form" onSubmit={submit}>
+      {mobile && <h2>{entry ? "Edit dinner" : "Add dinner"}</h2>}
+      <fieldset disabled={disabled}><label>{mobile && entry ? "Move dinner to" : "Date"}<input type="date" required value={form.date} onChange={(event) => edit("date", event.target.value)} /></label>
         <label>Title<input required maxLength={200} value={form.title} onChange={(event) => edit("title", event.target.value)} /></label>
         <label>Description<textarea aria-label="Description" rows={4} maxLength={2000} value={form.description} onChange={(event) => edit("description", event.target.value)} /></label>
         <label>Recipe Link<input type="url" placeholder="https://…" maxLength={2048} value={form.link} onChange={(event) => edit("link", event.target.value)} /></label>

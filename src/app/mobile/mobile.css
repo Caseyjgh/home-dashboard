@@ -72,3 +72,14 @@
 .mobile-upcoming { margin-top:24px; }
 .mobile-upcoming > section { margin-top:20px; }
 .mobile-upcoming h3 { font-size:16px; color:var(--gold); }
+.dinner-week-navigation { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.dinner-week-navigation h2 { margin:0; }
+.dinner-week-navigation button { min-width:44px; }
+.dinner-days ul { list-style:none; padding:0; margin:0; }
+.dinner-days li + li { margin-top:8px; }
+.dinner-days li button { width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; text-align:left; padding:12px; }
+.dinner-days li button[aria-pressed="true"] { border-color:var(--green); background:#e7eee4; }
+.dinner-days li button > span:first-child { flex:1; }
+.dinner-days li strong,.dinner-days li button > span:first-child > span { display:block; overflow-wrap:anywhere; }
+.dinner-day-action { flex:none; font-size:14px; font-weight:700; }
+#mobile-dinner-form { scroll-margin-top:16px; }
