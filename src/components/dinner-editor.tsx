@@ -35,7 +35,7 @@ export function DinnerEditor() {
     <form className="editor-card dinner-form" onSubmit={submit}>
       <fieldset disabled={disabled}><label>Date<input type="date" required value={form.date} onChange={(event) => edit("date", event.target.value)} /></label>
         <label>Title<input required maxLength={200} value={form.title} onChange={(event) => edit("title", event.target.value)} /></label>
-        <label>Description<textarea rows={4} maxLength={2000} value={form.description} onChange={(event) => edit("description", event.target.value)} /></label>
+        <label>Description<textarea aria-label="Description" rows={4} maxLength={2000} value={form.description} onChange={(event) => edit("description", event.target.value)} /></label>
         <label>Recipe Link<input type="url" placeholder="https://…" maxLength={2048} value={form.link} onChange={(event) => edit("link", event.target.value)} /></label>
         <p className="muted">The link stays hidden on Home. Tapping the dinner card opens the recipe in a new tab.</p>
         <div className="button-row"><button className="primary" type="submit">{saving ? "Saving…" : "Save dinner"}</button><button type="button" onClick={() => { setDraft(null); setNotice(""); }}>Reload saved entry</button>{entry && <button className="danger" type="button" onClick={() => setConfirmDelete(true)}>Delete dinner</button>}</div>

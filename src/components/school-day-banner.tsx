@@ -11,7 +11,7 @@ const labels = {
   gold: "GOLD DAY",
 };
 
-export function SchoolDayBanner() {
+export function SchoolDayBanner({ showSchoolNames = false }: { showSchoolNames?: boolean }) {
   // Start neutral so server and browser render the same markup across midnight.
   const [dateKey, setDateKey] = useState<string | null>(null);
 
@@ -36,7 +36,8 @@ export function SchoolDayBanner() {
   return <section className="school-day-banner" aria-label="School-day rotations">
     {[statuses?.wca, statuses?.whs].map((status, index) =>
       <div key={index} className={`school-day-half school-day-${status ?? "unknown"}`}>
-        {status ? labels[status] : "—"}
+        {showSchoolNames && <small>{index === 0 ? "WCA" : "WHS"}</small>}
+        <span>{status ? labels[status] : "—"}</span>
       </div>
     )}
   </section>;

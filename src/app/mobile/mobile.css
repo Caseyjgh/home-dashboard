@@ -1,0 +1,74 @@
+/* Scoped to /mobile: the Pi dashboard keeps its existing layout and typography. */
+.mobile-app { min-height:100dvh; color:var(--ink); font-size:16px; padding-bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
+.mobile-app * { min-width:0; }
+.mobile-header { max-width:680px; margin:auto; padding:calc(12px + env(safe-area-inset-top,0px)) 16px 8px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.mobile-header > a { display:flex; align-items:center; min-height:44px; color:var(--navy); font-weight:700; font-size:24px; text-decoration:none; }
+.mobile-header .mobile-pi-link { font-size:14px; font-weight:400; text-decoration:underline; }
+.mobile-content { max-width:680px; margin:auto; padding:0 16px 24px; }
+.mobile-app h1 { margin:12px 0 20px; font:700 28px/1.2 Arial,Helvetica,sans-serif; }
+.mobile-app h2 { font:700 17px/1.3 Arial,Helvetica,sans-serif; letter-spacing:.04em; margin:0 0 12px; }
+.mobile-app h3 { font-size:20px; margin:0 0 8px; }
+.mobile-app p { margin:0 0 12px; overflow-wrap:anywhere; }
+.mobile-app p:last-child { margin-bottom:0; }
+.mobile-app button,.mobile-app .todo-check,.mobile-action,.mobile-back { min-height:44px; }
+.mobile-app input,.mobile-app select,.mobile-app textarea { font-size:16px; max-width:100%; }
+.mobile-app input[type="date"] { appearance:none; }
+.mobile-app a,.mobile-app button { -webkit-tap-highlight-color:transparent; }
+.mobile-app :focus-visible { outline:3px solid var(--gold); outline-offset:3px; }
+.mobile-bottom-nav { position:fixed; z-index:30; bottom:0; left:0; right:0; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); padding:8px max(8px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px)); border-top:1px solid var(--line); background:var(--paper); }
+.mobile-bottom-nav a { display:flex; align-items:center; justify-content:center; min-height:48px; border-radius:6px; color:var(--navy); text-decoration:none; font-size:13px; font-weight:700; }
+.mobile-bottom-nav a[aria-current="page"] { background:var(--navy); color:var(--paper); }
+.mobile-back { display:inline-flex; align-items:center; color:var(--navy); margin:0 0 8px; }
+.mobile-card,.mobile-app .editor-card { padding:16px; border:1px solid var(--line); border-radius:8px; background:var(--paper); margin:0 0 16px; overflow-wrap:anywhere; }
+.mobile-card-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }
+.mobile-card-heading h2 { margin:0; }
+.mobile-card-heading a { display:flex; align-items:center; justify-content:center; min-width:60px; min-height:44px; padding:4px 10px; border:1px solid var(--line); border-radius:6px; color:inherit; }
+.mobile-action { display:flex; align-items:center; justify-content:center; width:100%; color:var(--navy); border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin-top:12px; font-weight:700; text-decoration:none; }
+.mobile-app .school-day-banner { height:80px; margin-bottom:16px; }
+.mobile-app .school-day-half { display:flex; flex-direction:column; justify-content:center; gap:6px; font-size:20px; }
+.mobile-app .school-day-half small { font-size:12px; letter-spacing:.12em; }
+.mobile-weather-current { display:flex; align-items:center; gap:16px; margin-bottom:8px; }
+.mobile-weather-current strong { font-size:36px; line-height:1.2; }
+.mobile-dinner { background:var(--navy); color:var(--paper); }
+.mobile-dinner h2 { color:var(--gold); }
+.mobile-dinner h3 { font:26px/1.2 Georgia,serif; margin-bottom:6px; }
+.mobile-dinner p { white-space:pre-wrap; }
+.mobile-dinner a { color:var(--paper); border-color:#fbf7ef55; }
+.mobile-person + .mobile-person { border-top:1px solid var(--line); padding-top:16px; margin-top:16px; }
+.mobile-person ul,.mobile-reminders { list-style:none; padding:0; margin:0; }
+.mobile-app .todo-check { font-size:17px; align-items:center; overflow-wrap:anywhere; }
+.mobile-reminders li { padding:12px 0; border-bottom:1px solid var(--line); }
+.mobile-reminders li.high-importance { padding:12px; background:#fbe0df; color:#702722; font-weight:700; border-radius:6px; }
+.mobile-reminders strong { font-size:14px; }
+.mobile-reminders p { margin:4px 0 0; }
+.mobile-app .editor-page { width:100%; margin:0; }
+.mobile-app .editor-page > h1,.mobile-app .editor-page > .page-description { display:block; }
+.mobile-app .editor-page > .page-description { font-size:15px; }
+.mobile-app .editor-toolbar,.mobile-app .todo-editors { grid-template-columns:minmax(0,1fr); gap:12px; margin:0 0 16px; }
+.mobile-app .editor-card h2 { font:700 20px/1.3 Arial,Helvetica,sans-serif; }
+.mobile-app .button-row { gap:8px; }
+.mobile-app .button-row .primary,.mobile-app .add-todo > button { width:100%; }
+.mobile-app .task-meta { font-size:14px; }
+.mobile-app .data-notice { margin-bottom:16px; font-size:15px; }
+.mobile-app .calendar-panel { min-height:0; padding:16px; border-radius:8px; }
+.mobile-app .calendar-heading { flex-direction:column; align-items:stretch; gap:12px; margin-bottom:12px; }
+.mobile-app .calendar-heading h2 { position:static; width:auto; height:auto; clip:auto; overflow:visible; white-space:normal; margin:0; }
+.mobile-app .calendar-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; }
+.mobile-app .calendar-actions button { font-size:14px; padding:8px; min-height:44px; }
+.mobile-app .date-navigation { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; gap:8px; }
+.mobile-app .date-navigation button { min-width:44px; padding:8px; font-size:15px; }
+.mobile-app .calendar-connect { flex-direction:column; align-items:stretch; gap:12px; }
+.mobile-app .calendar-connect strong { font-size:22px; }
+.mobile-app .calendar-connect p,.mobile-app .calendar-message { font-size:16px; }
+.mobile-app .calendar-warning { font-size:15px; padding:12px; }
+.mobile-app .calendar-options { max-height:none; }
+.mobile-app .calendar-options label { min-height:44px; font-size:16px; overflow-wrap:anywhere; }
+.mobile-app .calendar-options input { flex-shrink:0; }
+.mobile-app .mobile-calendar-events { list-style:none; padding:0; margin:0; }
+.mobile-calendar-events li { padding:12px 0; border-bottom:1px solid var(--line); }
+.mobile-calendar-events time { display:block; font-size:14px; margin-bottom:4px; }
+.mobile-calendar-events strong { display:block; font-size:18px; overflow-wrap:anywhere; }
+.mobile-calendar-events span { display:block; font-size:14px; overflow-wrap:anywhere; }
+.mobile-upcoming { margin-top:24px; }
+.mobile-upcoming > section { margin-top:20px; }
+.mobile-upcoming h3 { font-size:16px; color:var(--gold); }

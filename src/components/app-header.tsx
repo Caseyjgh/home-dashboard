@@ -1,11 +1,16 @@
 "use client";
 import { HeaderWeather } from "./header-weather";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useRef } from "react";
 import { useMinuteClock } from "@/hooks/use-minute-clock";
 
 const links = [["/", "Home"], ["/important-events", "Edit Important Events"], ["/dinner", "Edit Dinner"], ["/todos", "Edit To-Dos"], ["/calendar-settings", "Calendar Settings"], ["/settings", "Settings"]];
 export function AppHeader() {
+  const pathname = usePathname();
+  return pathname === "/mobile" || pathname.startsWith("/mobile/") ? null : <DesktopHeader />;
+}
+function DesktopHeader() {
   const now = useMinuteClock();
   const menu = useRef<HTMLDetailsElement>(null);
   return <header className="app-header">

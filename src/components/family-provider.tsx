@@ -4,6 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { requestJson } from "@/lib/client-request";
 import type { FamilyCommand, FamilyData } from "@/lib/family-model";
 
+const REFRESH_INTERVAL = 30_000;
+
 type Status = "loading" | "ready" | "signin" | "offline" | "error";
 type FamilyContext = { data: FamilyData | null; status: Status; error: string | null; saving: boolean; refresh: () => void; save: (command: FamilyCommand, revision?: number) => Promise<boolean> };
 const Context = createContext<FamilyContext | null>(null);
@@ -51,7 +53,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
         etag.current = response.headers.get("etag") || "";
       }
       setStatus("ready"); setError(null); failures.current = 0; lastRead.current = Date.now();
-      delay = 120_000;
+      delay = REFRESH_INTERVAL;
     } catch (failure) {
       if (disposed.current || writing.current) return;
       setStatus(navigator.onLine ? "error" : "offline");
@@ -93,7 +95,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       writing.current = false;
       if (!disposed.current) {
         setSaving(false);
-        timer.current = setTimeout(refresh, success ? 120_000 : 15_000);
+        timer.current = setTimeout(refresh, success ? REFRESH_INTERVAL : 15_000);
       }
     }
   }, [accept, refresh]);
@@ -107,7 +109,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     const visible = () => {
       if (document.hidden) clearTimeout(timer.current);
       else if (Date.now() - lastRead.current >= 10_000) void refresh();
-      else { clearTimeout(timer.current); timer.current = setTimeout(refresh, 120_000); }
+      else { clearTimeout(timer.current); timer.current = setTimeout(refresh, REFRESH_INTERVAL); }
     };
     timer.current = setTimeout(refresh, 0);
     window.addEventListener("online", online);

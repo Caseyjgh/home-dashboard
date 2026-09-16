@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { calendarEventTime as eventTime, upcomingCalendarDays } from "@/lib/calendar-display";
 import { FitList } from "./fit-list";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMinuteClock } from "@/hooks/use-minute-clock";
@@ -27,15 +28,6 @@ function displayDate(dateKey: string) {
   });
 }
 
-function eventTime(event: CalendarEvent, timeZone: string) {
-  if (event.allDay) return "All day";
-  const format = (value: string) => new Date(value).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone,
-  });
-  return `${format(event.start)} – ${format(event.end)}`;
-}
 
 type ApiData = { error?: string; reconnect?: boolean };
 function apiError(response: Response, data: ApiData, fallback: string) {
@@ -45,7 +37,7 @@ function apiError(response: Response, data: ApiData, fallback: string) {
   };
 }
 
-export function CalendarPanel({ settingsOnly = false }: { settingsOnly?: boolean }) {
+export function CalendarPanel({ settingsOnly = false, mobile = false }: { settingsOnly?: boolean; mobile?: boolean }) {
   const now = useMinuteClock();
   const { calendar, setCalendar, connection, reloadCache } = useCachedCalendar();
   const [selectedDate, setSelectedDate] = useState("");
@@ -143,6 +135,7 @@ export function CalendarPanel({ settingsOnly = false }: { settingsOnly?: boolean
     }, 0);
     return () => window.clearTimeout(timer);
   }, [todayKey, reloadCache]);
+  const upcoming = mobile && selectedDate ? upcomingCalendarDays(calendar.cache?.events ?? [], calendar.selectedIds, selectedDate) : [];
   const dateIsCached = Boolean(
     calendar.cache && selectedDate >= calendar.cache.rangeStart && selectedDate < calendar.cache.rangeEnd,
   );
@@ -242,7 +235,7 @@ export function CalendarPanel({ settingsOnly = false }: { settingsOnly?: boolean
   async function connectGoogleCalendar() {
     try {
       const { signIn } = await import("next-auth/react");
-      await signIn("google", { redirectTo: "/" });
+      await signIn("google", { redirectTo: mobile ? "/mobile/calendar" : "/" });
     } catch { setCalendarNotice("Sign-in could not start. Check your connection and try again."); }
   }
 
@@ -253,12 +246,14 @@ export function CalendarPanel({ settingsOnly = false }: { settingsOnly?: boolean
       if (!response.ok) throw new Error(apiError(response, data, "Unable to reset Google Calendar").message);
       const { signIn, signOut } = await import("next-auth/react");
       await signOut({ redirect: false });
-      await signIn("google", { redirectTo: "/?calendarReconnect=complete" }, {
+      await signIn("google", { redirectTo: mobile ? "/mobile/calendar?calendarReconnect=complete" : "/?calendarReconnect=complete" }, {
         scope: `openid email profile ${CALENDAR_SCOPE}`,
         access_type: "offline", prompt: "select_account consent", include_granted_scopes: "true",
       });
     } catch { setCalendarNotice("Reconnection could not finish. Check your connection and try again."); }
   }
+
+  const renderEvent = (event: CalendarEvent) => <><time>{eventTime(event, calendarTimeZone)}</time><div><strong title={event.title}>{event.title}</strong><span>{event.calendarName}{event.location ? ` · ${event.location}` : ""}</span></div></>;
 
   return (
         <section className="calendar-panel" aria-labelledby="calendar-heading">
@@ -269,7 +264,7 @@ export function CalendarPanel({ settingsOnly = false }: { settingsOnly?: boolean
             </div>
             {calendar.authenticated && (
               <div className="calendar-actions">
-                {settingsOnly ? <button onClick={openCalendarSettings}>Calendars</button> : <Link href="/calendar-settings" prefetch={false}>Calendars</Link>}
+                {settingsOnly || mobile ? <button onClick={openCalendarSettings}>Calendars</button> : <Link href="/calendar-settings" prefetch={false}>Calendars</Link>}
                 <button className="refresh-button" onClick={refreshCalendar} disabled={refreshingCalendar}>
                   {refreshingCalendar ? "Refreshing…" : "Refresh Calendar"}
                 </button>
@@ -350,9 +345,14 @@ export function CalendarPanel({ settingsOnly = false }: { settingsOnly?: boolean
             <p className="calendar-message">This date is outside the saved calendar range.</p>
           ) : dayEvents.length === 0 ? (
             <p className="calendar-message">No events scheduled for this day.</p>
+          ) : mobile ? (
+            <ol className="mobile-calendar-events">{[...allDayEvents, ...timedEvents].map(event => <li key={`${event.calendarId}:${event.id}`}>{renderEvent(event)}</li>)}</ol>
           ) : (
             <FitList key={selectedDate} items={[...allDayEvents, ...timedEvents]} label="calendar events" className="calendar-events" renderItem={(event) => <li key={event.id}><time>{eventTime(event, calendarTimeZone)}</time><div><strong title={event.title}>{event.title}</strong><span>{event.calendarName}{event.location ? ` · ${event.location}` : ""}</span></div></li>} />
           )}
+          {mobile && calendar.authenticated && !showCalendarSettings && calendar.cache && <section className="mobile-upcoming" aria-label="Upcoming events"><h2>Upcoming</h2>
+            {upcoming.length ? upcoming.map(group => <section key={group.date}><h3>{displayDate(group.date)}</h3><ol className="mobile-calendar-events">{group.events.map(event => <li key={`${event.calendarId}:${event.id}`}>{renderEvent(event)}</li>)}</ol></section>) : <p>No upcoming events in the saved calendar.</p>}
+          </section>}
         </section>
 
   );
