@@ -1,4 +1,6 @@
 "use client";
+import { activeImportantEvents } from "@/lib/active-important-events";
+import { useMinuteClock } from "@/hooks/use-minute-clock";
 import { useState } from "react";
 import { useFamily } from "./family-provider";
 
@@ -10,7 +12,8 @@ export function ImportantEvents() {
   const { data } = useFamily();
   const limit = 4;
   const [page, setPage] = useState(0);
-  const entries = data?.importantEvents ?? [];
+  const now = useMinuteClock();
+  const entries = activeImportantEvents(data?.importantEvents, now);
   const pages = Math.max(1, Math.ceil(entries.length / limit));
   const current = Math.min(page, pages - 1);
   return <div className={`important-events ${entries.length ? "" : "empty"}`}>

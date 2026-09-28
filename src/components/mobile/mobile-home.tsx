@@ -1,4 +1,5 @@
 "use client";
+import { activeImportantEvents } from "@/lib/active-important-events";
 import Link from "next/link";
 import { SchoolDayBanner } from "../school-day-banner";
 import { FamilyStatus, useFamily } from "../family-provider";
@@ -31,8 +32,7 @@ export function MobileHome() {
   const now = useMinuteClock();
   const today = now ? dateKey(now) : "";
   const dinner = data?.dinners.find(entry => entry.date === today);
-  // Match the Pi's saved reminders; do not silently expire household entries.
-  const reminders = data?.importantEvents ?? [];
+  const reminders = activeImportantEvents(data?.importantEvents, now);
   return <main className="mobile-home"><h1>Today at home</h1><FamilyStatus />
     <SchoolDayBanner showSchoolNames />
     <MobileWeather />

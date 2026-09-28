@@ -10,7 +10,7 @@ Open `/mobile` on the deployment running this branch. The Pi dashboard remains a
 
 Use the same Google account on the phone and Pi. Both interfaces call the existing `/api/family` API and use the same email-scoped Redis records. No migration, new database or new environment variable is required. Redis credentials remain server-only. Revision checks protect against simultaneous edits.
 
-On this branch, visible pages recheck household data every 30 seconds using conditional requests. Hidden/offline pages stop, failed requests back off, and successful saves update the phone immediately. Weather keeps its 15-minute refresh and Calendar keeps its existing cache/manual-refresh behavior. No full-page reload or service worker was added. The unchanged `main` deployment retains its own previous refresh interval until these changes are separately approved for production.
+On this branch, visible pages recheck household data every 30 seconds using conditional requests. Hidden/offline pages stop, failed requests back off, and successful saves update the phone immediately. Weather keeps its 15-minute refresh and Calendar keeps its existing cache/manual-refresh behavior. Home screens also reload every two hours, deferring while hidden, offline, saving, or in an editor. No service worker is used. Important Events disappear from both home screens after their final Denver calendar day; saved history remains available in the editor.
 
 ## iPhone installation
 

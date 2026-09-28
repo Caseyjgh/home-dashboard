@@ -9,3 +9,11 @@ Hidden pages stop the theme timer and immediately catch up when visible or focus
 Reload an already-open app once after deploying this feature. Subsequent 9 PM and 5 AM switches are automatic while the app is running, or immediately on resume after sleep.
 
 Validation: `tests/scheduled-theme.test.mjs` checks summer/winter boundaries, DST transition dates, timer cleanup, and resume behavior. `tests/scheduled-theme.browser.mjs` checks real browser transitions, night colors, hydration, navigation, and preservation of unsaved dinner edits.
+
+## Two-hour home refresh and event expiration
+
+A separate scheduler reloads `/` and `/mobile` every two hours of document lifetime. It waits while hidden, offline, saving household data, or choosing calendars. Editing routes never reload automatically; returning home after the deadline triggers the pending reload. Timers and listeners are cleaned up on route changes/unmount. This full reload is separate from the automatic 9 PM/5 AM palette update, which preserves unsaved forms.
+
+Important Events are filtered using the shared America/Denver date helper. A single-date event remains visible through that date; a range remains through its end date. The existing minute clock updates the filter after midnight or on resume. Records are retained in Redis and the editor, with no deletion or schema changes.
+
+`tests/dashboard-refresh.test.mjs` and `tests/dashboard-refresh.browser.mjs` cover expiration, midnight rollover, reload timing, deferred reloads, history retention, and draft protection.
