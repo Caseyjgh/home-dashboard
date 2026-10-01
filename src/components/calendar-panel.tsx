@@ -145,7 +145,7 @@ export function CalendarPanel({ settingsOnly = false, mobile = false }: { settin
     const nowMs = Date.now();
     if (cooldownUntil > nowMs) {
       const minutes = Math.max(1, Math.ceil((cooldownUntil - nowMs) / 60_000));
-      setCalendarNotice(`Calendar was refreshed recently. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
+      setCalendarNotice(`A calendar refresh was attempted recently. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
       return;
     }
     setRefreshingCalendar(true);
@@ -163,7 +163,7 @@ export function CalendarPanel({ settingsOnly = false, mobile = false }: { settin
         const secondsLeft = data.retryAfter ?? 300;
         setCooldownUntil(Date.now() + secondsLeft * 1000);
         const minutes = Math.max(1, Math.ceil(secondsLeft / 60));
-        setCalendarNotice(`Calendar was refreshed recently. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
+        setCalendarNotice(`A calendar refresh was attempted recently. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
       } else if (!response.ok) {
         setCalendarNotice(data.error || "Calendar couldn't be refreshed. Showing previously saved events.");
       } else {

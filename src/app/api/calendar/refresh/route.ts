@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { getToken } from "@auth/core/jwt";
 import { auth } from "@/auth";
 import { beginRefresh, getCalendarCache, getCalendarChoices, getSelectedCalendarIds, saveCalendarCache, saveCalendarTimeZone } from "@/lib/calendar-cache";
-import { fetchEventsForCalendars, GoogleCalendarError, usableAccessToken } from "@/lib/google-calendar";
+import { calendarRefreshFailure, fetchEventsForCalendars, GoogleCalendarError, usableAccessToken } from "@/lib/google-calendar";
 
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
   }
   const cooldown = await beginRefresh(email);
   if (!cooldown.allowed) {
-    return Response.json({ error: "Calendar was refreshed recently.", retryAfter: cooldown.retryAfter }, {
+    return Response.json({ error: "A calendar refresh was attempted recently. Please wait before trying again.", retryAfter: cooldown.retryAfter }, {
       status: 429,
       headers: { "Retry-After": String(cooldown.retryAfter) },
     });
@@ -47,11 +47,9 @@ export async function POST(request: NextRequest) {
     return Response.json({ cache });
   } catch (error) {
     const status = error instanceof GoogleCalendarError ? error.status : 500;
-    console.error("calendar_sync", { timestamp: startedAt, calendarsQueried: selected.length, eventsReturned: 0, success: false, googleStatus: status });
-    const reconnect = status === 401 || (error instanceof GoogleCalendarError && ["insufficientPermissions", "insufficient_scope", "ACCESS_TOKEN_SCOPE_INSUFFICIENT"].includes(error.reason ?? ""));
+    console.error("calendar_sync", { timestamp: startedAt, calendarsQueried: selected.length, eventsReturned: 0, success: false, googleStatus: status, googleReason: error instanceof GoogleCalendarError ? error.reason ?? "unknown" : "internal_error" });
     return Response.json({
-      error: reconnect ? "Google Calendar read access is unavailable. Please reconnect Google Calendar." : "Calendar couldn't be refreshed. Showing previously saved events.",
-      reconnect,
+      ...calendarRefreshFailure(error),
       cache: await getCalendarCache(email),
     }, { status: status === 401 ? 401 : 502 });
   }

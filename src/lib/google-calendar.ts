@@ -13,7 +13,21 @@ type GoogleEvent = {
 type GooglePage<T> = { items?: T[]; nextPageToken?: string };
 
 export class GoogleCalendarError extends Error {
+  calendarName?: string;
   constructor(public status: number, message: string, public reason?: string) { super(message); }
+}
+
+export function calendarRefreshFailure(error: unknown) {
+  const google = error instanceof GoogleCalendarError ? error : null;
+  const reason = google?.reason;
+  const reconnect = google?.status === 401 || ["insufficientPermissions", "insufficient_scope", "ACCESS_TOKEN_SCOPE_INSUFFICIENT"].includes(reason ?? "");
+  const calendar = google?.calendarName ? ` for calendar “${google.calendarName}”` : "";
+  let message = "Calendar couldn't be refreshed. Please try again later.";
+  if (reconnect) message = "Google Calendar access needs to be renewed. Use Reconnect Google Calendar and allow calendar read access.";
+  else if (["accessNotConfigured", "SERVICE_DISABLED"].includes(reason ?? "")) message = "Google Calendar API is disabled for this app's Google Cloud project. Enable it in Google Cloud Console.";
+  else if (google?.status === 429 || ["rateLimitExceeded", "userRateLimitExceeded", "quotaExceeded", "dailyLimitExceeded"].includes(reason ?? "")) message = `Google's calendar request limit was reached${calendar}. Wait before trying again; repeated refreshes will not help.`;
+  else if (google?.status === 403 || google?.status === 404) message = `Google rejected access${calendar}${reason ? ` (${reason})` : ""}. Check that this Google account can open it, or deselect it under Calendars and refresh again.`;
+  return { error: `${message} Previously saved events are unchanged.`, reconnect };
 }
 
 type GoogleApiErrorBody = {
@@ -160,10 +174,16 @@ export async function fetchEventsForCalendars(
         timeZone,
       });
       if (pageToken) params.set("pageToken", pageToken);
-      const page = await googleFetch<GooglePage<GoogleEvent>>(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?${params}`,
-        accessToken,
-      );
+      let page: GooglePage<GoogleEvent>;
+      try {
+        page = await googleFetch<GooglePage<GoogleEvent>>(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?${params}`,
+          accessToken,
+        );
+      } catch (error) {
+        if (error instanceof GoogleCalendarError) error.calendarName = calendar.name;
+        throw error;
+      }
       for (const event of page.items ?? []) {
         if (event.status === "cancelled" || !event.id || !event.start || !event.end) continue;
         const start = event.start.dateTime || event.start.date;
